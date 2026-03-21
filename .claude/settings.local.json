@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(sed -i '' 's/import { supabaseServer } from \"\"@\\\\/lib\\\\/supabase\"\";/import { getServerClient } from \"\"@\\\\/lib\\\\/supabase\"\";/' /Users/yuyang/Documents/Rill/advocate-prototype/app/api/embed/route.ts /Users/yuyang/Documents/Rill/advocate-prototype/app/api/search/route.ts /Users/yuyang/Documents/Rill/advocate-prototype/app/api/profile/[userId]/route.ts /Users/yuyang/Documents/Rill/advocate-prototype/app/api/onboarding/finalize/route.ts)",
+      "Bash(__NEW_LINE_b8e8541f1a8566d8__ sed:*)",
+      "Bash(for f:*)",
+      "Bash(do)",
+      "Bash(sed -i '' 's/import { supabaseServer } from \"\"@\\\\/lib\\\\/supabase\"\";/import { getServerClient } from \"\"@\\\\/lib\\\\/supabase\"\";/' \"$f\")",
+      "Bash(sed -i '' 's/supabaseServer\\\\./getServerClient\\(\\)./g' \"$f\")",
+      "Bash(done)",
+      "Bash(node:*)"
+    ]
+  }
+}

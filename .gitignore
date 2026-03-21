@@ -1,0 +1,17 @@
+                                                                                                                                                                               
+# Next.js                                                                                                                                                                    
+.next/                                                                                                                                                                     
+next-env.d.ts                                                                                                                                                                
+                                                                                                                                                                             
+# TypeScript                                                                                                                                                                 
+tsconfig.tsbuildinfo                                                                                                                                                       
+
+# Dependencies                                                                                                                                                               
+node_modules/
+                                                                                                                                                                               
+# Env                                                                                                                                                                        
+.env.local                                                                                                                                                                   
+                                                                                                                                                                               
+# macOS                                                                                                                                                                      
+.DS_Store    
+
