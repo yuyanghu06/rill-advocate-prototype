@@ -37,7 +37,13 @@ export default function LandingPage() {
             For recruiters
           </Link>
           <Link
-            href="/onboarding"
+            href="/auth"
+            className="text-sm text-slate-500 hover:text-slate-800 transition-colors"
+          >
+            Sign in
+          </Link>
+          <Link
+            href="/auth"
             className="text-sm bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-700 transition-colors"
           >
             Get started

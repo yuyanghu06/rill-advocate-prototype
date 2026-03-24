@@ -57,7 +57,12 @@ rill-advocate/
 │   ├── embeddings.ts                   # Embedding generation helpers
 │   ├── chunking.ts                     # Hierarchical section chunking logic
 │   ├── scraper.ts                      # Resume / LinkedIn / GitHub extraction
-│   └── ranking.ts                      # User ranking score calculation
+│   ├── ranking.ts                      # User ranking score calculation
+│   └── tools/
+│       ├── index.ts                    # Exports advocateTools array + executeTool dispatcher
+│       ├── saveExperienceBlock.ts      # Tool: save a confirmed block to Supabase + embed
+│       ├── fetchGithubRepos.ts         # Tool: fetch public repos + READMEs via GitHub REST API
+│       └── redirectUser.ts             # Tool: signal the frontend to open an external URL
 ├── types/
 │   └── index.ts                        # Shared TypeScript types (Block, Session, etc.)
 ├── public/                             # Static assets
@@ -104,11 +109,61 @@ rill-advocate/
 |---|---|---|
 | `ANTHROPIC_API_KEY` | Claude API access | [console.anthropic.com](https://console.anthropic.com) |
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | Supabase dashboard |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY` | Supabase anon key | Supabase dashboard |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key | Supabase dashboard |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service key (server only) | Supabase dashboard |
 | `UPSTASH_REDIS_REST_URL` | Upstash Redis endpoint | Upstash console |
 | `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis token | Upstash console |
 | `OPENAI_API_KEY` | Embedding generation | [platform.openai.com](https://platform.openai.com) |
+| `GITHUB_TOKEN` | GitHub REST API auth for `fetch_github_repos` tool (optional — raises rate limit from 60 to 5,000 req/hr) | [github.com/settings/tokens](https://github.com/settings/tokens) |
+
+---
+
+## Authentication
+
+Rill uses [Supabase Auth](https://supabase.com/docs/guides/auth) for user identity. No separate auth service is needed.
+
+### How it works
+
+| Layer | File | What it does |
+|---|---|---|
+| Middleware | `middleware.ts` | Runs on every request, refreshes the Supabase JWT, and redirects unauthenticated users away from protected routes |
+| Auth page | `app/auth/page.tsx` | Combined sign-in / sign-up form (email + password) |
+| Callback | `app/auth/callback/route.ts` | Exchanges the one-time code from email confirmation links for a persistent session |
+| Sign-out | `app/auth/signout/route.ts` | `POST` handler that calls `supabase.auth.signOut()` and redirects to `/auth` |
+| Browser client | `lib/supabase.ts` → `getBrowserClient()` | Used in client components (`AuthForm`) for sign-in/sign-up |
+| Server client | `lib/supabase.server.ts` → `getAuthServerClient()` | Used in server components and route handlers to read the session from cookies |
+
+### Protected routes
+
+The middleware protects `/onboarding`, `/recruiter`, and `/profile`. Unauthenticated requests are redirected to `/auth?next=<original-path>` and forwarded after login.
+
+### Supabase setup
+
+1. In your Supabase project, go to **Authentication → URL Configuration**.
+2. Add `http://localhost:3000/auth/callback` to **Redirect URLs** (and your production URL when deploying).
+3. Email/password sign-up is enabled by default. No additional configuration required for MVP.
+
+---
+
+## Agent Tools
+
+The Advocate agent has three Claude API tools it can call mid-conversation. The route handler at `app/api/advocate/route.ts` runs a streaming agentic loop — text tokens stream to the client in real time, tool calls execute silently between rounds, and results are fed back before the next streaming turn.
+
+| Tool | File | When Claude calls it | What it does |
+|---|---|---|---|
+| `save_experience_block` | `lib/tools/saveExperienceBlock.ts` | After confirming each experience block with the user | Inserts the block into Supabase, generates an OpenAI embedding, and updates the user's ranking score |
+| `fetch_github_repos` | `lib/tools/fetchGithubRepos.ts` | When the user provides a GitHub URL | Calls the GitHub REST API for profile info, public repos (filtered for forks), and README excerpts for the top 3 repos |
+| `redirect_user` | `lib/tools/redirectUser.ts` | When the user needs to visit an external page (e.g. LinkedIn data export) | Emits a `\x00REDIRECT:{...}\x00` marker in the text stream; the frontend strips it and renders a link button in the chat |
+
+### Redirect marker protocol
+
+The `redirect_user` tool does not navigate the user directly. Instead, the route injects a null-byte-delimited JSON marker into the stream:
+
+```
+\x00REDIRECT:{"url":"...","label":"...","reason":"...","open_in_new_tab":true}\x00
+```
+
+`ChatWindow.tsx` parses these markers out of the accumulated stream text, strips them from the displayed message, and renders styled link buttons below the message for the user to click.
 
 ---
 

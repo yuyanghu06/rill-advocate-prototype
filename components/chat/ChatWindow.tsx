@@ -3,64 +3,106 @@
 import { useEffect, useRef, useState } from "react";
 import MessageBubble, { type Message } from "./MessageBubble";
 import SourceUploader from "./SourceUploader";
+import type { RedirectPayload } from "@/lib/tools";
+import { processStream } from "@/lib/streamMarkers";
+import { REDIRECT_MARKER_PREFIX as REDIRECT_PREFIX, REDIRECT_MARKER_SUFFIX as REDIRECT_SUFFIX } from "@/lib/tools/redirectUser";
 
-// Strip the <finalize>…</finalize> block before displaying to the user.
+// Strip <finalize>…</finalize> blocks from display text.
 function stripFinalizeTag(text: string): string {
   return text.replace(/<finalize>[\s\S]*?<\/finalize>/g, "").trim();
 }
 
-function getUserId(): string {
-  if (typeof window === "undefined") return "";
-  const key = "rill_user_id";
-  let id = localStorage.getItem(key);
-  if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem(key, id);
-  }
-  return id;
+// Used only when loading stored messages from Redis (markers are not persisted,
+// but kept as a safety pass in case any stray markers slip through).
+function extractRedirects(raw: string): { text: string; redirects: RedirectPayload[] } {
+  const redirects: RedirectPayload[] = [];
+  const text = raw.replace(
+    new RegExp(
+      `${REDIRECT_PREFIX.replace(/\x00/g, "\\x00")}([\\s\\S]*?)${REDIRECT_SUFFIX.replace(/\x00/g, "\\x00")}`,
+      "g"
+    ),
+    (_, json) => {
+      try { redirects.push(JSON.parse(json)); } catch { /* skip */ }
+      return "";
+    }
+  );
+  return { text, redirects };
 }
 
-export default function ChatWindow() {
+const TOOL_LABELS: Record<string, string> = {
+  save_experience_block: "Saving experience",
+  update_experience_block: "Updating experience",
+  upsert_skills: "Updating skills",
+  fetch_github_repos: "Fetching GitHub data",
+  redirect_user: "Preparing link",
+};
+
+export default function ChatWindow({ userId }: { userId: string }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [showUploader, setShowUploader] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [toolStatus, setToolStatus] = useState<string | null>(null);
   const [sessionComplete, setSessionComplete] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
   const [finalized, setFinalized] = useState(false);
+  const [pendingRedirects, setPendingRedirects] = useState<RedirectPayload[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const userIdRef = useRef<string>("");
+  // Tracks the IDs of advocate reply bubbles for the current streaming turn.
+  const replyIdsRef = useRef<string[]>([]);
 
-  // Load userId once on mount, then load existing session
   useEffect(() => {
-    userIdRef.current = getUserId();
     loadSession();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isStreaming]);
+  }, [messages, isStreaming, toolStatus, pendingRedirects]);
 
   async function loadSession() {
-    const userId = userIdRef.current;
     if (!userId) return;
 
     const res = await fetch(`/api/onboarding/session?userId=${userId}`);
     const { session } = await res.json();
 
     if (session?.messages?.length) {
-      const loaded: Message[] = session.messages.map(
-        (m: { role: string; content: string }, i: number) => ({
-          id: String(i),
-          role: m.role === "user" ? "user" : "advocate",
-          content: stripFinalizeTag(m.content),
+      const RESUME_PREFIX = "Here is my resume:\n\n";
+
+      function extractText(content: string | { type: string; text?: string }[]): string {
+        if (typeof content === "string") return content;
+        return content
+          .filter((b) => b.type === "text")
+          .map((b) => b.text ?? "")
+          .join("");
+      }
+
+      const loaded: Message[] = session.messages
+        .map((m: { role: string; content: string | { type: string; text?: string }[] }, i: number) => {
+          const rawText = extractText(m.content);
+          if (!rawText) return null;
+
+          const content = stripFinalizeTag(extractRedirects(rawText).text);
+          if (m.role === "user" && rawText.startsWith(RESUME_PREFIX)) {
+            const resumeText = rawText.slice(RESUME_PREFIX.length);
+            const wordCount = resumeText.trim().split(/\s+/).length;
+            return {
+              id: String(i),
+              role: "user" as const,
+              content,
+              display: `📄 Resume — ${wordCount.toLocaleString()} words`,
+            };
+          }
+          return {
+            id: String(i),
+            role: m.role === "user" ? "user" : "advocate",
+            content,
+          };
         })
-      );
+        .filter((m): m is Message => m !== null);
       setMessages(loaded);
       if (session.step === "complete") setSessionComplete(true);
     } else {
-      // Fresh session — show the opening message
       setMessages([
         {
           id: "0",
@@ -75,7 +117,6 @@ export default function ChatWindow() {
   async function sendMessage(text: string, display?: string) {
     if (!text.trim() || isStreaming) return;
 
-    const userId = userIdRef.current;
     const userMsg: Message = {
       id: Date.now().toString(),
       role: "user",
@@ -85,13 +126,12 @@ export default function ChatWindow() {
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setIsStreaming(true);
+    setPendingRedirects([]);
 
-    // Placeholder for the streaming advocate reply
-    const replyId = (Date.now() + 1).toString();
-    setMessages((prev) => [
-      ...prev,
-      { id: replyId, role: "advocate", content: "" },
-    ]);
+    // Initialize the first reply bubble
+    const firstReplyId = `reply-${Date.now()}-0`;
+    replyIdsRef.current = [firstReplyId];
+    setMessages((prev) => [...prev, { id: firstReplyId, role: "advocate", content: "" }]);
 
     try {
       const res = await fetch("/api/advocate", {
@@ -104,34 +144,65 @@ export default function ChatWindow() {
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
-      let fullText = "";
+      let rawAccum = "";
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        fullText += decoder.decode(value, { stream: true });
-        const display = stripFinalizeTag(fullText);
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === replyId ? { ...m, content: display } : m
-          )
-        );
+        rawAccum += decoder.decode(value, { stream: true });
+
+        const { bubbles, toolStatus: status, redirects } = processStream(rawAccum);
+
+        // Capture how many bubbles existed before this iteration
+        const prevCount = replyIdsRef.current.length;
+
+        // Allocate IDs for any new bubbles discovered in this chunk
+        for (let i = prevCount; i < bubbles.length; i++) {
+          replyIdsRef.current.push(`reply-${Date.now()}-${i}`);
+        }
+
+        // Add new placeholder messages and update all bubble contents atomically
+        setMessages((prev) => {
+          let next = [...prev];
+          for (let i = prevCount; i < replyIdsRef.current.length; i++) {
+            next = [...next, { id: replyIdsRef.current[i], role: "advocate", content: "" }];
+          }
+          return next.map((m) => {
+            const idx = replyIdsRef.current.indexOf(m.id);
+            if (idx === -1 || idx >= bubbles.length) return m;
+            const content = stripFinalizeTag(bubbles[idx]);
+            return content !== m.content ? { ...m, content } : m;
+          });
+        });
+
+        setToolStatus(status);
+
+        if (redirects.length > 0) {
+          setPendingRedirects((prev) => {
+            const existingUrls = new Set(prev.map((r) => r.url));
+            const newOnes = redirects.filter((r) => !existingUrls.has(r.url));
+            return newOnes.length ? [...prev, ...newOnes] : prev;
+          });
+        }
       }
 
-      // Check if the session is now complete
-      if (/<finalize>/i.test(fullText)) {
+      if (/<finalize>/i.test(rawAccum)) {
         setSessionComplete(true);
       }
     } catch {
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === replyId
-            ? { ...m, content: "Something went wrong. Please try again." }
-            : m
-        )
-      );
+      const lastId = replyIdsRef.current[replyIdsRef.current.length - 1];
+      if (lastId) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === lastId
+              ? { ...m, content: "Something went wrong. Please try again." }
+              : m
+          )
+        );
+      }
     } finally {
       setIsStreaming(false);
+      setToolStatus(null);
     }
   }
 
@@ -141,7 +212,7 @@ export default function ChatWindow() {
       const res = await fetch("/api/onboarding/finalize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: userIdRef.current }),
+        body: JSON.stringify({ userId: userId }),
       });
       if (res.ok) setFinalized(true);
     } finally {
@@ -149,10 +220,7 @@ export default function ChatWindow() {
     }
   }
 
-  function handleSourceSubmit(
-    type: "linkedin" | "github" | "other",
-    url: string
-  ) {
+  function handleSourceSubmit(type: "linkedin" | "github" | "other", url: string) {
     const label = { linkedin: "LinkedIn", github: "GitHub", other: "Link" }[type];
     let hostname = url;
     try { hostname = new URL(url).hostname.replace("www.", ""); } catch { /* keep raw */ }
@@ -172,16 +240,30 @@ export default function ChatWindow() {
     setShowUploader(false);
   }
 
+  const lastMsgContent = messages[messages.length - 1]?.content;
+
   return (
     <div className="flex flex-col h-full">
       {/* Message list */}
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
-        {messages.map((msg) => (
-          <MessageBubble key={msg.id} message={msg} />
-        ))}
+        {messages.map((msg) =>
+          msg.role === "advocate" && msg.content === "" ? null : (
+            <MessageBubble key={msg.id} message={msg} />
+          )
+        )}
 
-        {/* Typing indicator — shown only while waiting for first token */}
-        {isStreaming && messages[messages.length - 1]?.content === "" && (
+        {/* Tool status indicator — shown while a tool call is in flight */}
+        {isStreaming && toolStatus && (
+          <div className="flex items-center gap-2 pl-9">
+            <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-pulse flex-shrink-0" />
+            <span className="text-xs text-slate-400 italic">
+              {TOOL_LABELS[toolStatus] ?? toolStatus}…
+            </span>
+          </div>
+        )}
+
+        {/* Typing indicator — shown while waiting for the first token of a new bubble */}
+        {isStreaming && !toolStatus && lastMsgContent === "" && (
           <div className="flex items-end gap-2">
             <div className="w-7 h-7 rounded-full bg-brand-500 flex items-center justify-center flex-shrink-0">
               <span className="text-white text-xs font-bold">A</span>
@@ -199,6 +281,23 @@ export default function ChatWindow() {
             </div>
           </div>
         )}
+
+        {/* Redirect link buttons */}
+        {pendingRedirects.map((r) => (
+          <div key={r.url} className="flex justify-start pl-9">
+            <a
+              href={r.url}
+              target={r.open_in_new_tab ? "_blank" : "_self"}
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 bg-brand-50 hover:bg-brand-100 border border-brand-200 text-brand-700 text-sm font-medium px-4 py-2.5 rounded-xl transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+              {r.label}
+            </a>
+          </div>
+        ))}
 
         {/* Finalize CTA */}
         {sessionComplete && !finalized && (
@@ -219,10 +318,10 @@ export default function ChatWindow() {
         {finalized && (
           <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-center">
             <p className="text-sm font-semibold text-emerald-700">
-              Profile saved! You're now discoverable by recruiters.
+              Profile saved! You&apos;re now discoverable by recruiters.
             </p>
             <a
-              href={`/profile/${userIdRef.current}`}
+              href={`/profile/${userId}`}
               className="inline-block mt-2 text-xs text-emerald-600 hover:underline"
             >
               View your profile →
@@ -233,7 +332,7 @@ export default function ChatWindow() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Source uploader (toggleable) */}
+      {/* Source uploader */}
       {showUploader && (
         <div className="px-4 pb-2">
           <SourceUploader
@@ -250,21 +349,10 @@ export default function ChatWindow() {
             type="button"
             onClick={() => setShowUploader((v) => !v)}
             className="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 text-slate-400 hover:text-brand-500 hover:border-brand-300 transition-colors"
-            title="Add a URL"
+            title="Add a URL or upload resume"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.1m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-              />
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.1m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
             </svg>
           </button>
 
@@ -279,9 +367,7 @@ export default function ChatWindow() {
               }
             }}
             disabled={isStreaming || finalized}
-            placeholder={
-              finalized ? "Profile saved." : "Message Advocate…"
-            }
+            placeholder={finalized ? "Profile saved." : "Message Advocate…"}
             className="flex-1 resize-none rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-brand-400 leading-relaxed disabled:bg-slate-50 disabled:text-slate-400"
           />
 
@@ -291,19 +377,8 @@ export default function ChatWindow() {
             disabled={!input.trim() || isStreaming || finalized}
             className="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-xl bg-brand-500 disabled:bg-slate-200 text-white disabled:text-slate-400 transition-colors"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M5 12h14M12 5l7 7-7 7"
-              />
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5l7 7-7 7" />
             </svg>
           </button>
         </div>

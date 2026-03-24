@@ -11,7 +11,8 @@
       "Bash(sed -i '' 's/import { supabaseServer } from \"\"@\\\\/lib\\\\/supabase\"\";/import { getServerClient } from \"\"@\\\\/lib\\\\/supabase\"\";/' \"$f\")",
       "Bash(sed -i '' 's/supabaseServer\\\\./getServerClient\\(\\)./g' \"$f\")",
       "Bash(done)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(wait)"
     ]
   }
 }

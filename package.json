@@ -6,10 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "bun test",
+    "test:watch": "bun test --watch"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",
+    "@supabase/ssr": "^0.9.0",
     "@supabase/supabase-js": "^2.99.3",
     "@upstash/redis": "^1.37.0",
     "next": "15.2.1",

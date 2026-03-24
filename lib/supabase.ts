@@ -1,24 +1,18 @@
+import { createBrowserClient } from "@supabase/ssr";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-// Lazy singletons — clients are created on first use, not at module load,
-// so the build succeeds without env vars present.
-
-let _browser: SupabaseClient | null = null;
-let _server: SupabaseClient | null = null;
-
-// Browser client — uses anon key, respects RLS.
-export function getBrowserClient(): SupabaseClient {
-  if (!_browser) {
-    _browser = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-  }
-  return _browser;
+// ── Browser client (client components) ──────────────────────────────────────
+// Manages auth cookies automatically in the browser.
+export function getBrowserClient() {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 }
 
-// Server client — uses service role key, bypasses RLS.
-// Only call this from server-side code (route handlers, server components).
+// ── Admin / service-role client ──────────────────────────────────────────────
+// Bypasses RLS. Only use in server-side code (route handlers).
+let _server: SupabaseClient | null = null;
 export function getServerClient(): SupabaseClient {
   if (!_server) {
     _server = createClient(

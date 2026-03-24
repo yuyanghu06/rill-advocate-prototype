@@ -18,14 +18,14 @@ export async function GET(
     db
       .from("experience_blocks")
       .select(
-        "block_id, title, overview, source_type, source_url, helper_urls, date_range, embedded_text, chunk_tree"
+        "block_id, title, source_type, source_url, helper_urls, date_range, embedded_text, chunk_tree"
       )
       .eq("user_id", userId)
       .order("date_range", { ascending: false }),
 
     db
       .from("user_profiles")
-      .select("ranking_score, display_name")
+      .select("ranking_score, display_name, skills")
       .eq("user_id", userId)
       .single(),
   ]);
@@ -41,6 +41,7 @@ export async function GET(
     user_id: userId,
     display_name: profileResult.data?.display_name ?? null,
     ranking_score: profileResult.data?.ranking_score ?? 0,
+    skills: profileResult.data?.skills ?? {},
     blocks: blocksResult.data,
   });
 }
