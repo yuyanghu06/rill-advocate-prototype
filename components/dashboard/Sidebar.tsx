@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import BugReportModal from "@/components/dashboard/BugReportModal";
 
 const NAV_ITEMS = [
   { href: "/onboarding", label: "Onboarding" },
@@ -15,6 +16,7 @@ export default function Sidebar({ userEmail }: { userEmail: string }) {
   const pathname = usePathname();
   const router = useRouter();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
+  const [bugModalOpen, setBugModalOpen] = useState(false);
 
   useEffect(() => {
     if (pendingHref && pathname.startsWith(pendingHref)) {
@@ -53,17 +55,31 @@ export default function Sidebar({ userEmail }: { userEmail: string }) {
       </nav>
 
       {/* User footer */}
-      <div className="px-4 py-3 border-t border-slate-100">
-        <p className="text-xs text-slate-400 truncate mb-2">{userEmail}</p>
-        <form action="/auth/signout" method="POST">
+      <div className="px-4 py-3 border-t border-slate-100 space-y-2">
+        <p className="text-xs text-slate-400 truncate">{userEmail}</p>
+        <div className="flex items-center justify-between">
+          <form action="/auth/signout" method="POST">
+            <button
+              type="submit"
+              className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              Sign out
+            </button>
+          </form>
           <button
-            type="submit"
-            className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
+            onClick={() => setBugModalOpen(true)}
+            className="text-xs text-slate-400 hover:text-red-500 transition-colors flex items-center gap-1"
+            title="Report a bug"
           >
-            Sign out
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Bug
           </button>
-        </form>
+        </div>
       </div>
+
+      {bugModalOpen && <BugReportModal onClose={() => setBugModalOpen(false)} />}
     </aside>
   );
 }

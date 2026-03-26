@@ -4,6 +4,7 @@
     "app/api/advocate/chat/route.ts": { "maxDuration": 60 },
     "app/api/discover/search/route.ts": { "maxDuration": 30 },
     "app/api/embed/route.ts": { "maxDuration": 30 },
-    "app/api/upload/resume/route.ts": { "maxDuration": 30 }
+    "app/api/upload/resume/route.ts": { "maxDuration": 30 },
+    "app/api/bug-report/route.ts": { "maxDuration": 30 }
   }
 }
