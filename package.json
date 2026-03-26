@@ -15,7 +15,7 @@
     "@supabase/ssr": "^0.9.0",
     "@supabase/supabase-js": "^2.99.3",
     "@upstash/redis": "^1.37.0",
-    "next": "15.2.1",
+    "next": "15.2.8",
     "openai": "^6.32.0",
     "pdf-parse": "^2.4.5",
     "react": "^19.0.0",
