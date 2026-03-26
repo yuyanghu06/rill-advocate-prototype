@@ -3,6 +3,7 @@ import Link from "next/link";
 import ExperienceBlock from "@/components/profile/ExperienceBlock";
 import RankingBadge from "@/components/profile/RankingBadge";
 import SkillsList from "@/components/onboarding/SkillsList";
+import { getServerClient } from "@/lib/supabase";
 
 type ProfileData = {
   user_id: string;
@@ -21,12 +22,32 @@ type ProfileData = {
 };
 
 async function getProfile(userId: string): Promise<ProfileData | null> {
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  const res = await fetch(`${base}/api/profile/${userId}`, {
-    next: { revalidate: 60 },
-  });
-  if (!res.ok) return null;
-  return res.json();
+  const db = getServerClient();
+  const [blocksResult, profileResult] = await Promise.all([
+    db
+      .from("experience_blocks")
+      .select("block_id, title, source_type, source_url, helper_urls, date_range, embedded_text")
+      .eq("user_id", userId)
+      .order("date_range", { ascending: false }),
+    db
+      .from("user_profiles")
+      .select("ranking_score, display_name, headline")
+      .eq("user_id", userId)
+      .single(),
+  ]);
+
+  if (blocksResult.error || !blocksResult.data) return null;
+
+  return {
+    user_id: userId,
+    display_name: profileResult.data?.display_name ?? null,
+    headline: profileResult.data?.headline ?? null,
+    ranking_score: profileResult.data?.ranking_score ?? 0,
+    blocks: blocksResult.data.map((b) => ({
+      ...b,
+      overview: b.embedded_text ?? "",
+    })),
+  };
 }
 
 export default async function ProfilePage({
