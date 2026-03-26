@@ -99,7 +99,7 @@ export default function ChatWindow({ userId }: { userId: string }) {
             content,
           };
         })
-        .filter((m): m is Message => m !== null);
+        .filter((m: Message | null): m is Message => m !== null);
       setMessages(loaded);
       if (session.step === "complete") setSessionComplete(true);
     } else {
