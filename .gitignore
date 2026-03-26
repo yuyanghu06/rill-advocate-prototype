@@ -1,17 +1,63 @@
-                                                                                                                                                                               
-# Next.js                                                                                                                                                                    
-.next/                                                                                                                                                                     
-next-env.d.ts                                                                                                                                                                
-                                                                                                                                                                             
-# TypeScript                                                                                                                                                                 
-tsconfig.tsbuildinfo                                                                                                                                                       
+# ── Next.js ──────────────────────────────────────────────────────────────────
+.next/
+next-env.d.ts
+out/
 
-# Dependencies                                                                                                                                                               
+# ── Dependencies ──────────────────────────────────────────────────────────────
 node_modules/
-                                                                                                                                                                               
-# Env                                                                                                                                                                        
-.env.local                                                                                                                                                                   
-                                                                                                                                                                               
-# macOS                                                                                                                                                                      
-.DS_Store    
+.pnp
+.pnp.js
 
+# ── Lockfiles (project uses bun — bun.lock is canonical) ─────────────────────
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# ── Build artifacts ───────────────────────────────────────────────────────────
+tsconfig.tsbuildinfo
+*.tsbuildinfo
+
+# ── Environment variables ─────────────────────────────────────────────────────
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ── Vercel ────────────────────────────────────────────────────────────────────
+.vercel/
+
+# ── Supabase ─────────────────────────────────────────────────────────────────
+supabase/.temp/
+
+# ── IDE / editor tooling ──────────────────────────────────────────────────────
+.claude/
+.cursor/
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ── macOS ─────────────────────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# ── Test / coverage ───────────────────────────────────────────────────────────
+coverage/
+.nyc_output/
+
+# ── Misc ──────────────────────────────────────────────────────────────────────
+*.pem
+.turbo/
