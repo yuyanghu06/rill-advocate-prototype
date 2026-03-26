@@ -1,8 +1,8 @@
-# Converse Page — SKILL.md
+# Advocate Page — SKILL.md
 
 ## Overview
 
-The **Converse** page is a chat interface that lets a logged-in Rill user ask a conversational AI agent questions about themselves — their experiences, skills, projects, and linked resources. The agent retrieves the most semantically relevant context from Postgres before every LLM call and can redirect the user to a relevant helper or source URL via a dedicated tool.
+The **Advocate** page is a chat interface that lets a logged-in Rill user ask a conversational AI agent questions about themselves — their experiences, skills, projects, and linked resources. The agent retrieves the most semantically relevant context from Postgres before every LLM call and can redirect the user to a relevant helper or source URL via a dedicated tool.
 
 ---
 
@@ -11,16 +11,16 @@ The **Converse** page is a chat interface that lets a logged-in Rill user ask a 
 ```
 src/
 └── pages/
-    └── converse/
+    └── advocate/
         ├── index.tsx          # Page entry point
-        ├── ConversePage.tsx   # Root component
+        ├── AdvocatePage.tsx   # Root component
         ├── ChatWindow.tsx     # Message list + scroll container
         ├── ChatInput.tsx      # Text input + send button
         ├── useChatStore.ts    # Zustand / context store for message history
         └── api/
-            └── converse.ts    # Server-side handler (embedding + LLM call)
+            └── advocate.ts    # Server-side handler (embedding + LLM call)
 prompts/
-└── converse.md                # System prompt (see §System Prompt Contract)
+└── advocate.md                # System prompt (see §System Prompt Contract)
 ```
 
 ---
@@ -106,15 +106,15 @@ Construct the RAG context block injected into the system prompt at runtime:
 -------------------------
 ```
 
-Append this block after the static contents of `prompts/converse.md` before sending to the LLM.
+Append this block after the static contents of `prompts/advocate.md` before sending to the LLM.
 
 ---
 
 ## System Prompt Contract
 
-The static portion of the system prompt lives in `prompts/converse.md`.
+The static portion of the system prompt lives in `prompts/advocate.md`.
 
-**Required sections in `prompts/converse.md`:**
+**Required sections in `prompts/advocate.md`:**
 - Role definition — who the agent is and what it knows
 - Tone guidance — conversational, first-person ("you"), non-robotic
 - Scope constraints — only answer questions about the user; decline unrelated requests graciously
@@ -182,10 +182,10 @@ if (block.type === 'tool_use' && block.name === 'redirect') {
 
 ---
 
-## API Handler (`api/converse.ts`)
+## API Handler (`api/advocate.ts`)
 
 ```
-POST /api/converse
+POST /api/advocate
 Authorization: Bearer <session token>
 
 Body: {
@@ -199,7 +199,7 @@ Body: {
 1. Authenticate the request; extract `userId`.
 2. Embed `message` using the project's embedding model (same model used at ingestion time).
 3. Run the two Postgres KNN queries (K=5 each) scoped to `userId`.
-4. Build the context block; inject into `prompts/converse.md` at `{{RETRIEVED_CONTEXT}}`.
+4. Build the context block; inject into `prompts/advocate.md` at `{{RETRIEVED_CONTEXT}}`.
 5. Call the LLM with:
    - `system`: assembled prompt
    - `messages`: `[...history, { role: 'user', content: message }]`
@@ -245,6 +245,6 @@ Body: {
 
 ## Related Files
 
-- `prompts/converse.md` — static system prompt (must contain `{{RETRIEVED_CONTEXT}}` placeholder)
+- `prompts/advocate.md` — static system prompt (must contain `{{RETRIEVED_CONTEXT}}` placeholder)
 - `SKILL.md` (onboarding) — describes how experience chunks and skills are ingested
 - `experience_chunks` and `user_skills` tables — data source for retrieval

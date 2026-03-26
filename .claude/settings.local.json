@@ -12,7 +12,10 @@
       "Bash(sed -i '' 's/supabaseServer\\\\./getServerClient\\(\\)./g' \"$f\")",
       "Bash(done)",
       "Bash(node:*)",
-      "Bash(wait)"
+      "Bash(wait)",
+      "Bash(git add:*)",
+      "Bash(git mv:*)",
+      "Bash(git commit:*)"
     ]
   }
 }

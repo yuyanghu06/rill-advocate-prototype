@@ -25,7 +25,7 @@ export async function GET(
 
     db
       .from("user_profiles")
-      .select("ranking_score, display_name, skills")
+      .select("ranking_score, display_name, skills, headline")
       .eq("user_id", userId)
       .single(),
   ]);
@@ -40,6 +40,7 @@ export async function GET(
   return NextResponse.json({
     user_id: userId,
     display_name: profileResult.data?.display_name ?? null,
+    headline: profileResult.data?.headline ?? null,
     ranking_score: profileResult.data?.ranking_score ?? 0,
     skills: profileResult.data?.skills ?? {},
     blocks: blocksResult.data,

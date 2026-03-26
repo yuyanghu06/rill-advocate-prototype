@@ -12,23 +12,36 @@ import {
 import type Anthropic from "@anthropic-ai/sdk";
 
 /**
- * POST /api/converse
+ * POST /api/advocate
  *
  * RAG chat about the authenticated user's own profile.
  * 1. Embed the user's message.
  * 2. Query experience_blocks (top 5 by cosine similarity) + fetch skills.
- * 3. Build the context block and inject into prompts/converse.md.
+ * 3. Build the context block and inject into prompts/advocate-chat.md.
  * 4. Stream Claude's response; execute the redirect tool client-side via markers.
  *
  * Body: { message: string; history: { role: "user" | "assistant"; content: string }[] }
  */
 
-const CONVERSE_PROMPT_TEMPLATE = readFileSync(
-  join(process.cwd(), "prompts", "converse.md"),
+const ADVOCATE_PROMPT_TEMPLATE = readFileSync(
+  join(process.cwd(), "prompts", "advocate.md"),
   "utf-8"
 );
 
-const converseRedirectTool: Anthropic.Tool = {
+// Used when a recruiter is querying about someone else's profile.
+const RECRUITER_ADVOCATE_PROMPT_TEMPLATE = `You are Advocate, a talent intelligence assistant on the Rill platform. You have deep knowledge of a specific candidate's professional experiences, projects, and skills because their profile was built from sources they shared — their resume, GitHub, LinkedIn, and structured onboarding conversations.
+
+Your job is to answer questions a recruiter asks about this candidate: their experiences, skills, career trajectory, projects, and the stories behind their work.
+
+**Tone:** Informative, objective, concise. Refer to the candidate by name or as "they/them". Never speculate beyond what the retrieved profile contains.
+
+**Scope:** You only answer questions about this specific candidate based on their retrieved profile data below. If asked about something outside the retrieved context, decline: "I only have context on this candidate's profile — I can't answer that."
+
+**Using the redirect tool:** If a helper URL, GitHub repo, deployed project link, or source URL from the retrieved context would help the recruiter evaluate the candidate, call the \`redirect\` tool. Only use URLs that appear in the retrieved context.
+
+{{RETRIEVED_CONTEXT}}`;
+
+const advocateRedirectTool: Anthropic.Tool = {
   name: "redirect",
   description:
     "Opens a URL for the user in a new tab. Use this when a helper URL or source URL from the retrieved context would help the user explore a topic further — e.g., a GitHub repo, deployed demo, or project page. Only use URLs that appear in the retrieved context.",
@@ -59,8 +72,9 @@ interface ExperienceRow {
   similarity: number;
 }
 
-function buildContext(blocks: ExperienceRow[], skills: Record<string, number>): string {
+function buildContext(blocks: ExperienceRow[], skills: Record<string, number>, candidateName?: string): string {
   const lines: string[] = ["--- RETRIEVED CONTEXT ---", ""];
+  if (candidateName) lines.push(`Candidate: ${candidateName}`, "");
 
   if (blocks.length > 0) {
     lines.push("### Relevant Experiences");
@@ -105,31 +119,44 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { message, history = [] } = await req.json() as {
+  const { message, history = [], targetUserId } = await req.json() as {
     message: string;
     history: HistoryMessage[];
+    targetUserId?: string;
   };
 
   if (!message?.trim()) {
     return NextResponse.json({ error: "message is required" }, { status: 400 });
   }
 
-  // Embed the user's message + query experience blocks in parallel with skills fetch
+  // Use the target candidate's profile when provided; otherwise the auth user's own profile.
   const db = getServerClient();
+  const subjectId = targetUserId ?? user.id;
+  const isRecruiterMode = !!targetUserId && targetUserId !== user.id;
+
   const [queryEmbedding, profileResult] = await Promise.all([
     embedText(message),
-    db.from("user_profiles").select("skills").eq("user_id", user.id).single(),
+    db.from("user_profiles")
+      .select("skills, display_name")
+      .eq("user_id", subjectId)
+      .single(),
   ]);
 
   const { data: blocks } = await db.rpc("match_user_experience_blocks", {
-    p_user_id: user.id,
+    p_user_id: subjectId,
     query_embedding: queryEmbedding,
     match_count: 5,
   });
 
   const skills = (profileResult.data?.skills as Record<string, number>) ?? {};
-  const context = buildContext((blocks as ExperienceRow[]) ?? [], skills);
-  const systemPrompt = CONVERSE_PROMPT_TEMPLATE.replace("{{RETRIEVED_CONTEXT}}", context);
+  const candidateName = isRecruiterMode
+    ? (profileResult.data?.display_name ?? undefined)
+    : undefined;
+  const context = buildContext((blocks as ExperienceRow[]) ?? [], skills, candidateName);
+  const template = isRecruiterMode
+    ? RECRUITER_ADVOCATE_PROMPT_TEMPLATE
+    : ADVOCATE_PROMPT_TEMPLATE;
+  const systemPrompt = template.replace("{{RETRIEVED_CONTEXT}}", context);
 
   const encoder = new TextEncoder();
 
@@ -146,7 +173,7 @@ export async function POST(req: NextRequest) {
             model: "claude-sonnet-4-6",
             max_tokens: 1024,
             system: systemPrompt,
-            tools: [converseRedirectTool],
+            tools: [advocateRedirectTool],
             messages,
           });
 

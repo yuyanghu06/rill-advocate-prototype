@@ -2,6 +2,7 @@ import type Anthropic from "@anthropic-ai/sdk";
 import { getServerClient } from "@/lib/supabase";
 import { embedText } from "@/lib/embeddings";
 import { computeRankingScore } from "@/lib/ranking";
+import { refreshUserHeadline } from "@/lib/tools/refreshUserHeadline";
 import type { ExperienceBlock } from "@/types";
 
 export const updateExperienceBlockTool: Anthropic.Tool = {
@@ -103,6 +104,11 @@ export async function handleUpdateExperienceBlock(input: UpdateInput) {
       { user_id: input.user_id, ranking_score: score, updated_at: new Date().toISOString() },
       { onConflict: "user_id" }
     );
+
+  // Regenerate headline from all block titles (fire-and-forget — don't block the response)
+  refreshUserHeadline(input.user_id).catch((err) =>
+    console.error("[refreshUserHeadline] update error", err)
+  );
 
   return { success: true, message: "Experience block updated." };
 }

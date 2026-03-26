@@ -31,7 +31,7 @@ export default function LandingPage() {
         </span>
         <div className="flex items-center gap-4">
           <Link
-            href="/recruiter"
+            href="/discover"
             className="text-sm text-slate-500 hover:text-slate-800 transition-colors"
           >
             For recruiters
@@ -77,7 +77,7 @@ export default function LandingPage() {
             Build my profile →
           </Link>
           <Link
-            href="/recruiter"
+            href="/discover"
             className="w-full sm:w-auto border border-slate-200 text-slate-700 hover:bg-slate-50 font-medium px-6 py-3 rounded-xl transition-colors text-base"
           >
             Search talent

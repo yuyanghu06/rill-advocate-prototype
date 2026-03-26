@@ -11,11 +11,12 @@ export default function RankingBadge({ score }: Props) {
   const { label, colors } = tier(score);
   return (
     <span
-      className={`inline-flex items-center gap-1.5 border text-xs font-semibold px-2.5 py-1 rounded-full ${colors}`}
+      className={`inline-flex items-center justify-between gap-1 border text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap w-[88px] flex-shrink-0 ${colors}`}
       title={`Ranking score: ${score}`}
     >
-      <span className="w-1.5 h-1.5 rounded-full bg-current opacity-70" />
-      {label} · {score}
+      <span className="w-1.5 h-1.5 rounded-full bg-current opacity-70 flex-shrink-0" />
+      <span className="flex-1 text-center">{label}</span>
+      <span className="opacity-60">·{score}</span>
     </span>
   );
 }

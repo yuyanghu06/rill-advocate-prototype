@@ -7,14 +7,19 @@ import type { RedirectPayload } from "@/lib/tools";
 
 type HistoryEntry = { role: "user" | "assistant"; content: string };
 
-export default function ConverseChatWindow() {
+type Props = {
+  targetUserId?: string;
+  candidateName?: string;
+};
+
+export default function AdvocateChatWindow({ targetUserId, candidateName }: Props = {}) {
+  const isRecruiterMode = !!targetUserId;
+  const subjectName = isRecruiterMode ? (candidateName ?? "this candidate") : "your";
+  const apostrophe = isRecruiterMode ? "'s" : "";
+  const greeting = `I'm Advocate — ask me anything about ${subjectName}${apostrophe} experiences, projects, or skills.`;
+
   const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "0",
-      role: "advocate",
-      content:
-        "Hey! I'm Advocate — ask me anything about your experiences, projects, or skills. I'll answer based on your profile.",
-    },
+    { id: "0", role: "advocate", content: greeting },
   ]);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [input, setInput] = useState("");
@@ -43,10 +48,10 @@ export default function ConverseChatWindow() {
     let fullText = "";
 
     try {
-      const res = await fetch("/api/converse", {
+      const res = await fetch("/api/advocate/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text.trim(), history }),
+        body: JSON.stringify({ message: text.trim(), history, targetUserId }),
       });
 
       if (!res.ok || !res.body) throw new Error("Request failed");
@@ -160,7 +165,7 @@ export default function ConverseChatWindow() {
               }
             }}
             disabled={isStreaming}
-            placeholder="Ask about your experiences, skills, or projects…"
+            placeholder={`Ask about ${subjectName}${apostrophe} experiences, skills, or projects…`}
             className="flex-1 resize-none rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-brand-400 leading-relaxed disabled:bg-slate-50 disabled:text-slate-400"
           />
           <button

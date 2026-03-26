@@ -4,6 +4,7 @@ export type ExperienceBlock = {
   user_id: string;
   block_id: string;
   title: string;
+  overview?: string;       // human-readable summary stored in DB
   embedded_text: string;   // descriptive summary; also the text passed to the embedding model
   raw_embedding?: number[];
   source_url: string;
@@ -55,4 +56,20 @@ export type RankedCandidate = {
   ranking_score: number;
   matching_blocks: ExperienceBlock[];
   similarity: number;
+};
+
+export type DiscoverCandidate = RankedCandidate & {
+  headline?: string;
+  top_skills?: string[];
+  helper_url_count?: number;
+  keyword_score?: number;
+  semantic_score?: number;
+  final_score?: number;
+};
+
+export type DiscoverFilters = {
+  skills: string[];
+  min_ranking: number;
+  has_github: boolean;
+  has_linkedin: boolean;
 };

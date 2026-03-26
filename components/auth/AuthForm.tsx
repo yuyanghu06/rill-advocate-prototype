@@ -12,6 +12,7 @@ export default function AuthForm() {
   const next = searchParams.get("next") ?? "/onboarding";
 
   const [mode, setMode] = useState<Mode>("signin");
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -30,6 +31,7 @@ export default function AuthForm() {
         email,
         password,
         options: {
+          data: { full_name: fullName.trim() },
           emailRedirectTo: `${window.location.origin}/auth/callback?next=${next}`,
         },
       });
@@ -79,7 +81,7 @@ export default function AuthForm() {
           <button
             key={m}
             type="button"
-            onClick={() => { setMode(m); setError(null); }}
+            onClick={() => { setMode(m); setError(null); setFullName(""); }}
             className={`flex-1 text-sm font-medium py-2 rounded-lg transition-colors ${
               mode === m
                 ? "bg-white text-slate-900 shadow-sm"
@@ -92,6 +94,23 @@ export default function AuthForm() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {mode === "signup" && (
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1.5">
+              Full name
+            </label>
+            <input
+              type="text"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              required
+              autoComplete="name"
+              placeholder="Jane Smith"
+              className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-brand-400"
+            />
+          </div>
+        )}
+
         <div>
           <label className="block text-xs font-medium text-slate-600 mb-1.5">
             Email

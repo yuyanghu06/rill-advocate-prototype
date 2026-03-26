@@ -2,10 +2,12 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import ExperienceBlock from "@/components/profile/ExperienceBlock";
 import RankingBadge from "@/components/profile/RankingBadge";
+import SkillsList from "@/components/onboarding/SkillsList";
 
 type ProfileData = {
   user_id: string;
   display_name: string | null;
+  headline: string | null;
   ranking_score: number;
   blocks: {
     block_id: string;
@@ -48,7 +50,7 @@ export default async function ProfilePage({
             rill<span className="text-brand-500">.</span>
           </Link>
           <Link
-            href="/recruiter"
+            href="/discover"
             className="text-sm text-slate-500 hover:text-slate-800 transition-colors"
           >
             ← Back to search
@@ -66,13 +68,19 @@ export default async function ProfilePage({
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="text-xl font-bold text-slate-900">{name}</h1>
-            <p className="text-sm text-slate-400 mt-0.5">
+            {profile.headline && (
+              <p className="text-sm text-slate-600 mt-0.5 truncate">{profile.headline}</p>
+            )}
+            <p className="text-xs text-slate-400 mt-0.5">
               {profile.blocks.length} experience block
               {profile.blocks.length !== 1 ? "s" : ""}
             </p>
           </div>
           <RankingBadge score={profile.ranking_score} />
         </div>
+
+        {/* Skills */}
+        <SkillsList userId={userId} />
 
         {/* Experience blocks */}
         <section>
