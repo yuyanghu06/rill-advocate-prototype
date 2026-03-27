@@ -2,14 +2,21 @@ import { redirect } from "next/navigation";
 import Sidebar from "@/components/dashboard/Sidebar";
 import DiscoverSearch from "@/components/discover/DiscoverSearch";
 import { getAuthServerClient } from "@/lib/supabase.server";
+import { getServerClient } from "@/lib/supabase";
 
 export default async function DiscoverPage() {
   const supabase = await getAuthServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) redirect("/auth?next=/discover");
+
+  const db = getServerClient();
+  const { data: profile } = await db
+    .from("user_profiles")
+    .select("is_recruiter")
+    .eq("user_id", user.id)
+    .single();
+  const isRecruiter = profile?.is_recruiter ?? false;
 
   return (
     <div className="flex h-screen bg-slate-50">
@@ -20,7 +27,7 @@ export default async function DiscoverPage() {
           <span className="text-sm font-semibold text-slate-700">Discover</span>
         </header>
 
-        <DiscoverSearch />
+        <DiscoverSearch isRecruiter={isRecruiter} />
       </div>
     </div>
   );

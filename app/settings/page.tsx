@@ -13,7 +13,7 @@ export default async function SettingsPage() {
   const [profileResult, blocksResult] = await Promise.all([
     db
       .from("user_profiles")
-      .select("display_name, headline, is_visible")
+      .select("display_name, headline, is_visible, is_recruiter, company_name")
       .eq("user_id", user.id)
       .single(),
     db
@@ -27,6 +27,8 @@ export default async function SettingsPage() {
     display_name: profileResult.data?.display_name ?? null,
     headline: profileResult.data?.headline ?? null,
     is_visible: profileResult.data?.is_visible ?? true,
+    is_recruiter: profileResult.data?.is_recruiter ?? false,
+    company_name: profileResult.data?.company_name ?? null,
   };
 
   const blocks = (blocksResult.data ?? []).map((b) => ({

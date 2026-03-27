@@ -18,6 +18,8 @@ type Profile = {
   display_name: string | null;
   headline: string | null;
   is_visible: boolean;
+  is_recruiter: boolean;
+  company_name: string | null;
 };
 
 type Props = {
@@ -183,6 +185,7 @@ function AccountTab({ email }: { email: string }) {
 
 function ProfileTab({ profile }: { profile: Profile }) {
   const [headline, setHeadline] = useState(profile.headline ?? "");
+  const [companyName, setCompanyName] = useState(profile.company_name ?? "");
   const [isVisible, setIsVisible] = useState(profile.is_visible);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
@@ -190,10 +193,12 @@ function ProfileTab({ profile }: { profile: Profile }) {
   async function save() {
     setSaving(true);
     setMsg(null);
+    const body: Record<string, unknown> = { headline, is_visible: isVisible };
+    if (profile.is_recruiter) body.company_name = companyName;
     const res = await fetch("/api/settings/profile", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ headline, is_visible: isVisible }),
+      body: JSON.stringify(body),
     });
     setSaving(false);
     setMsg(res.ok ? { text: "Profile updated.", ok: true } : { text: "Failed to save.", ok: false });
@@ -201,11 +206,28 @@ function ProfileTab({ profile }: { profile: Profile }) {
 
   return (
     <div className="space-y-6 max-w-md">
+      {/* Company name — recruiters only */}
+      {profile.is_recruiter && (
+        <section>
+          <h3 className="text-sm font-semibold text-slate-700 mb-1">Company name</h3>
+          <p className="text-xs text-slate-400 mb-2">
+            Shown on your company card in the candidate Discover feed.
+          </p>
+          <input
+            type="text"
+            value={companyName}
+            onChange={(e) => setCompanyName(e.target.value)}
+            placeholder="e.g. Acme Corp"
+            className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-400"
+          />
+        </section>
+      )}
+
       {/* Headline */}
       <section>
         <h3 className="text-sm font-semibold text-slate-700 mb-1">Headline</h3>
         <p className="text-xs text-slate-400 mb-2">
-          Shown on your candidate card in Discover search results.
+          {profile.is_recruiter ? "Shown on your company card." : "Shown on your candidate card in Discover search results."}
         </p>
         <textarea
           rows={2}

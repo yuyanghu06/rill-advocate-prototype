@@ -4,12 +4,21 @@ import ExperienceBlockList from "@/components/onboarding/ExperienceBlockList";
 import SkillsList from "@/components/onboarding/SkillsList";
 import Sidebar from "@/components/dashboard/Sidebar";
 import { getAuthServerClient } from "@/lib/supabase.server";
+import { getServerClient } from "@/lib/supabase";
 
 export default async function OnboardingPage() {
   const supabase = await getAuthServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) redirect("/auth?next=/onboarding");
+
+  const db = getServerClient();
+  const { data: profile } = await db
+    .from("user_profiles")
+    .select("is_recruiter")
+    .eq("user_id", user.id)
+    .single();
+  const isRecruiter = profile?.is_recruiter ?? false;
 
   return (
     <div className="flex h-screen bg-slate-50">
@@ -50,12 +59,12 @@ export default async function OnboardingPage() {
               </div>
 
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">
-                Experiences
+                {isRecruiter ? "Job Openings" : "Experiences"}
               </p>
-              <ExperienceBlockList userId={user.id} />
+              <ExperienceBlockList userId={user.id} isRecruiter={isRecruiter} />
             </div>
 
-            <SkillsList userId={user.id} />
+            <SkillsList userId={user.id} isRecruiter={isRecruiter} />
           </aside>
         </div>
       </div>

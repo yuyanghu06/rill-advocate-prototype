@@ -12,6 +12,7 @@ function loadPrompt(name: string): string {
 }
 
 export const ADVOCATE_SYSTEM_PROMPT = loadPrompt("advocate");
+export const RECRUITER_ONBOARDING_PROMPT = loadPrompt("recruiter-onboarding");
 
 export function buildMessages(
   history: ChatMessage[],

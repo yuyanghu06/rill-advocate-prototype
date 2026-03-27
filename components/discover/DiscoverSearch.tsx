@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import CandidateCard from "@/components/recruiter/CandidateCard";
+import CompanyFeed from "@/components/discover/CompanyFeed";
 import type { DiscoverCandidate, DiscoverFilters } from "@/types";
 
 
@@ -26,7 +27,10 @@ type SearchParams = {
   sort: string;
 };
 
-export default function DiscoverSearch() {
+export default function DiscoverSearch({ isRecruiter = false }: { isRecruiter?: boolean }) {
+  // Candidates browse company profiles; recruiters search for candidates.
+  if (!isRecruiter) return <CompanyFeed />;
+
   const [query, setQuery] = useState("");
   const [alpha, setAlpha] = useState(0.65);
   const [sort, setSort] = useState("best_match");

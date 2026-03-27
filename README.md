@@ -249,6 +249,7 @@ Tool calls that navigate the user emit a null-byte-delimited JSON marker in the 
 | `20260326000015_rewrite_similarity_fns.sql` | Rewrites `match_experience_blocks` and `match_user_experience_blocks` to Supabase standard pattern (`match_threshold`, distance-based WHERE, `least(match_count, 200)` cap) |
 | `20260326000016_cleanup_seed_v1.sql` | Removes the old hardcoded-UUID sample users inserted by the deleted v1 seed migration |
 | `20260326000017_add_profile_visibility.sql` | Adds `is_visible` boolean to `user_profiles` — controls Discover search visibility |
+| `20260326000018_add_recruiter_role.sql` | Adds `is_recruiter` boolean and `company_name` to `user_profiles`; updates signup trigger to persist role from auth metadata |
 
 ---
 

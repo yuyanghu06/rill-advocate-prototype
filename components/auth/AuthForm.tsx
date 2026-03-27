@@ -15,6 +15,7 @@ export default function AuthForm() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isRecruiter, setIsRecruiter] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmSent, setConfirmSent] = useState(false);
@@ -31,7 +32,7 @@ export default function AuthForm() {
         email,
         password,
         options: {
-          data: { full_name: fullName.trim() },
+          data: { full_name: fullName.trim(), is_recruiter: isRecruiter },
           emailRedirectTo: `${window.location.origin}/auth/callback?next=${next}`,
         },
       });
@@ -141,6 +142,20 @@ export default function AuthForm() {
             className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-brand-400"
           />
         </div>
+
+        {mode === "signup" && (
+          <label className="flex items-center gap-2.5 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={isRecruiter}
+              onChange={(e) => setIsRecruiter(e.target.checked)}
+              className="w-4 h-4 rounded border-slate-300 accent-brand-500"
+            />
+            <span className="text-sm text-slate-600">
+              I&apos;m a recruiter or hiring manager
+            </span>
+          </label>
+        )}
 
         {error && (
           <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">

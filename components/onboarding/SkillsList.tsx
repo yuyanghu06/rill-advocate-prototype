@@ -20,7 +20,7 @@ function ScoreDots({ score }: { score: number }) {
   );
 }
 
-export default function SkillsList({ userId }: { userId: string }) {
+export default function SkillsList({ userId, isRecruiter = false }: { userId: string; isRecruiter?: boolean }) {
   const [skills, setSkills] = useState<SkillsMap>({});
   const [open, setOpen] = useState(false);
   const [sort, setSort] = useState<SortOrder>("score");
@@ -63,7 +63,7 @@ export default function SkillsList({ userId }: { userId: string }) {
       >
         <div className="flex items-center gap-2">
           <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
-            Skills
+            {isRecruiter ? "Required Skills" : "Skills"}
           </p>
           {count > 0 && (
             <span className="text-xs font-medium text-brand-600 bg-brand-50 rounded-full px-1.5 py-0.5">
@@ -108,7 +108,7 @@ export default function SkillsList({ userId }: { userId: string }) {
             <div className="space-y-1.5">
               {count === 0 ? (
                 <p className="text-xs text-slate-400 italic">
-                  No skills identified yet — share your resume or GitHub to get started.
+                  {isRecruiter ? "No required skills yet — share a job description to get started." : "No skills identified yet — share your resume or GitHub to get started."}
                 </p>
               ) : (
                 entries.map(([name, score]) => (

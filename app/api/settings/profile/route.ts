@@ -15,12 +15,14 @@ export async function PATCH(req: NextRequest) {
     display_name?: string;
     headline?: string;
     is_visible?: boolean;
+    company_name?: string;
   };
 
   const updates: Record<string, unknown> = {};
   if (body.display_name !== undefined) updates.display_name = body.display_name.trim();
   if (body.headline !== undefined) updates.headline = body.headline.trim();
   if (body.is_visible !== undefined) updates.is_visible = body.is_visible;
+  if (body.company_name !== undefined) updates.company_name = body.company_name.trim() || null;
 
   if (!Object.keys(updates).length) {
     return NextResponse.json({ error: "No fields to update" }, { status: 400 });

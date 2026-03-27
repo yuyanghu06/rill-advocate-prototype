@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { anthropic, ADVOCATE_SYSTEM_PROMPT } from "@/lib/claude";
+import { anthropic, ADVOCATE_SYSTEM_PROMPT, RECRUITER_ONBOARDING_PROMPT } from "@/lib/claude";
+import { getServerClient } from "@/lib/supabase";
 import { getSession, setSession } from "@/lib/redis";
 import { advocateTools, executeTool } from "@/lib/tools";
 import {
@@ -63,6 +64,15 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Pick system prompt based on user's role
+  const db = getServerClient();
+  const { data: profile } = await db
+    .from("user_profiles")
+    .select("is_recruiter")
+    .eq("user_id", userId)
+    .single();
+  const systemPrompt = profile?.is_recruiter ? RECRUITER_ONBOARDING_PROMPT : ADVOCATE_SYSTEM_PROMPT;
+
   const session: OnboardingSession = (await getSession(userId)) ?? {
     user_id: userId,
     step: "welcome",
@@ -97,7 +107,7 @@ export async function POST(req: NextRequest) {
           const stream = anthropic.messages.stream({
             model: "claude-sonnet-4-6",
             max_tokens: 2048,
-            system: ADVOCATE_SYSTEM_PROMPT,
+            system: systemPrompt,
             tools: advocateTools,
             messages: loopMessages,
           });
