@@ -145,6 +145,7 @@ export async function POST(req: NextRequest) {
   const { data: blocks } = await db.rpc("match_user_experience_blocks", {
     p_user_id: subjectId,
     query_embedding: queryEmbedding,
+    match_threshold: 0.0,
     match_count: 5,
   });
 

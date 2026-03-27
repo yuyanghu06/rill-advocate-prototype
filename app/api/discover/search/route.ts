@@ -51,8 +51,8 @@ export async function POST(req: NextRequest) {
       "match_experience_blocks",
       {
         query_embedding: queryEmbedding,
+        match_threshold: 0.2,
         match_count: 600,
-        similarity_threshold: 0.2,
       }
     );
 
@@ -87,30 +87,14 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // ── User pool ──────────────────────────────────────────────────────────────
-  // In search mode use only matched users; in browse mode fetch all.
-  let userIds: string[];
-  if (query.trim() && semanticByUser.size > 0) {
-    userIds = Array.from(semanticByUser.keys());
-  } else {
-    const { data: allProfiles } = await supabase
-      .from("user_profiles")
-      .select("user_id")
-      .limit(500);
-    userIds = allProfiles?.map((p: { user_id: string }) => p.user_id) ?? [];
-  }
-
-  if (!userIds.length) {
-    return NextResponse.json({ total: 0, page, results: [] });
-  }
-
-  // ── Fetch enriched profiles ────────────────────────────────────────────────
+  // ── Fetch all profiles ─────────────────────────────────────────────────────
+  // Fetched up-front so keyword matching can expand the pool beyond semantic hits.
   const { data: profiles } = await supabase
     .from("user_profiles")
     .select(
       "user_id, ranking_score, display_name, headline, top_skills, skills, helper_url_count"
     )
-    .in("user_id", userIds);
+    .limit(500);
 
   const profileMap = new Map(
     (profiles ?? []).map((p: {
@@ -132,6 +116,33 @@ export async function POST(req: NextRequest) {
     .filter(Boolean)
     .filter((t: string) => t.length > 2); // skip stop-word-length tokens
 
+  // ── User pool ──────────────────────────────────────────────────────────────
+  // Union of: semantic matches + profiles whose skills/headline match query terms.
+  // This ensures keyword-only matches (no embeddings) still surface.
+  let userIds: string[];
+  if (query.trim()) {
+    const semanticIds = new Set(semanticByUser.keys());
+    if (queryTerms.length) {
+      for (const profile of profiles ?? []) {
+        const skillCorpus = [
+          ...(profile.top_skills ?? []),
+          ...Object.keys(profile.skills ?? {}),
+          profile.headline ?? "",
+        ].join(" ").toLowerCase();
+        if (queryTerms.some((t: string) => skillCorpus.includes(t))) {
+          semanticIds.add(profile.user_id);
+        }
+      }
+    }
+    userIds = Array.from(semanticIds);
+  } else {
+    userIds = (profiles ?? []).map((p: { user_id: string }) => p.user_id);
+  }
+
+  if (!userIds.length) {
+    return NextResponse.json({ total: 0, page, results: [] });
+  }
+
   const maxNdcg = Math.max(
     ...Array.from(semanticByUser.values()).map((e) => e.ndcgScore),
     1
@@ -145,7 +156,7 @@ export async function POST(req: NextRequest) {
     const skillsMapKeys = Object.keys(profile?.skills ?? {});
     const corpus = [
       ...(entry?.blocks.map(
-        (b) => `${b.title ?? ""} ${b.overview ?? ""} ${b.embedded_text ?? ""}`
+        (b) => `${b.title ?? ""} ${b.embedded_text ?? ""}`
       ) ?? []),
       ...(profile?.top_skills ?? []),
       ...skillsMapKeys,

@@ -243,9 +243,33 @@ Tool calls that navigate the user emit a null-byte-delimited JSON marker in the 
 | `20260324000008_add_skills_to_user_profiles.sql` | Adds `skills` JSONB column (name → score 1–5 map) to `user_profiles` |
 | `20260324000009_add_converse_fn.sql` | Creates `match_user_experience_blocks()` RPC — user-scoped similarity search for the Advocate chat |
 | `20260325000010_add_discover_fields_to_user_profiles.sql` | Adds `headline`, `top_skills`, `helper_url_count`, `github_url`, `linkedin_url` columns for Discover search |
-| `20260325000011_seed_sample_users.sql` | Seeds sample candidate profiles for development/testing |
 | `20260325000012_auto_sync_profile_aggregates.sql` | Trigger to keep `top_skills` and `helper_url_count` in sync with experience blocks |
 | `20260325000013_trigger_display_name_from_metadata.sql` | Trigger to populate `display_name` from Supabase auth user metadata on signup |
+| `20260326000014_create_bug_reports.sql` | Creates `bug_reports` table and `bug-screenshots` Storage bucket with per-user RLS |
+| `20260326000015_rewrite_similarity_fns.sql` | Rewrites `match_experience_blocks` and `match_user_experience_blocks` to Supabase standard pattern (`match_threshold`, distance-based WHERE, `least(match_count, 200)` cap) |
+| `20260326000016_cleanup_seed_v1.sql` | Removes the old hardcoded-UUID sample users inserted by the deleted v1 seed migration |
+
+---
+
+## Sample Data (Development Seed)
+
+Five realistic sample candidates are provided for local development and testing. Unlike a SQL migration, the seed script calls OpenAI to generate real 1536-dimension embeddings for every experience block, so all users appear correctly in semantic search on the Discover page.
+
+```bash
+bun run seed
+```
+
+This script is **idempotent** — running it again deletes and re-creates the sample users. Seed emails use the `@seed.rill.dev` domain so they are easy to distinguish from real accounts.
+
+| Email | Profile | Skills |
+|---|---|---|
+| alice.chen@seed.rill.dev | Full-stack engineer · ex-Stripe | React, TypeScript, Node.js, PostgreSQL |
+| bob.martinez@seed.rill.dev | ML engineer · ex-Hugging Face | Python, PyTorch, LLMs, CUDA |
+| carol.kim@seed.rill.dev | Mobile engineer | React Native, Swift, iOS, Expo |
+| david.park@seed.rill.dev | Platform engineer | Go, Kubernetes, Terraform |
+| emma.larsson@seed.rill.dev | Data/ML engineer | Python, dbt, Spark, SQL |
+
+**Note:** The seed script requires `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `OPENAI_API_KEY` in `.env.local`. Generating embeddings for all 21 blocks makes approximately 5 batched OpenAI API calls (one per user).
 
 ---
 
@@ -284,6 +308,5 @@ Features deferred from MVP:
 - Interview scoring integration
 - Recruiter-side job posting
 - Real-time scraping of live profile URLs
-- Keyword-based retrieval path for Discover (currently skills keyword matching is scoring-only, not retrieval)
 - Per-user k=5 guarantee at DB level via window function (currently handled in-memory)
 - Multi-user collaboration on profiles

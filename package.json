@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "test": "bun test",
-    "test:watch": "bun test --watch"
+    "test:watch": "bun test --watch",
+    "seed": "bun run scripts/seed-sample-users.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",
