@@ -94,6 +94,7 @@ export async function POST(req: NextRequest) {
     .select(
       "user_id, ranking_score, display_name, headline, top_skills, skills, helper_url_count"
     )
+    .eq("is_visible", true)
     .limit(500);
 
   const profileMap = new Map(
