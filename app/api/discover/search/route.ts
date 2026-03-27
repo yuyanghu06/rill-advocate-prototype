@@ -135,7 +135,8 @@ export async function POST(req: NextRequest) {
         }
       }
     }
-    userIds = Array.from(semanticIds);
+    // Only keep users whose profiles are visible (profileMap excludes is_visible=false)
+    userIds = Array.from(semanticIds).filter((id) => profileMap.has(id));
   } else {
     userIds = (profiles ?? []).map((p: { user_id: string }) => p.user_id);
   }
