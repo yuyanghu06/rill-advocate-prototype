@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PDFParse } from "pdf-parse";
+import pdfParse from "pdf-parse";
+
+export const maxDuration = 30;
 
 /**
  * POST /api/upload/resume
  *
  * Accepts a PDF file as multipart/form-data (field name: "file").
- * Reads the file into a buffer, extracts raw text with pdf-parse v2,
+ * Reads the file into a buffer, extracts raw text with pdf-parse,
  * and returns the cleaned text.
  *
  * Body: FormData { file: File }
@@ -35,8 +37,20 @@ export async function POST(req: NextRequest) {
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  const parser = new PDFParse({ data: buffer });
-  const { text } = await parser.getText();
+
+  let text: string;
+  try {
+    const result = await pdfParse(buffer);
+    text = result.text;
+  } catch {
+    return NextResponse.json(
+      {
+        error:
+          "Could not parse this PDF. Try a different file or paste your resume as plain text instead.",
+      },
+      { status: 422 }
+    );
+  }
 
   const cleaned = text
     .replace(/\r\n/g, "\n")
