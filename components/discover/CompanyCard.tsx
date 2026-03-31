@@ -89,6 +89,22 @@ export default function CompanyCard({ company }: { company: CompanyProfile }) {
       {openings.length === 0 && (
         <p className="text-xs text-slate-400 italic">No open roles listed yet.</p>
       )}
+
+      {/* Footer */}
+      <div className="flex items-center justify-end gap-3 pt-1">
+        <a
+          href={`/advocate?with=${company.user_id}`}
+          className="text-xs font-medium text-slate-500 hover:text-brand-600 transition-colors"
+        >
+          Advocate →
+        </a>
+        <a
+          href={`/profile/${company.user_id}`}
+          className="text-xs font-medium text-brand-600 hover:text-brand-800 transition-colors"
+        >
+          View profile →
+        </a>
+      </div>
     </div>
   );
 }

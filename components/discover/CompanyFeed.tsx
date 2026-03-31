@@ -21,7 +21,7 @@ type CompanyProfile = {
   job_openings: JobOpening[];
 };
 
-export default function CompanyFeed() {
+export default function CompanyFeed({ embedded = false }: { embedded?: boolean }) {
   const [companies, setCompanies] = useState<CompanyProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,10 +36,12 @@ export default function CompanyFeed() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-5 py-3 bg-white border-b border-slate-100 flex-shrink-0">
-        <h2 className="text-sm font-semibold text-slate-700">Companies hiring on Rill</h2>
-        <p className="text-xs text-slate-400 mt-0.5">Browse open roles from recruiters on the platform</p>
-      </div>
+      {!embedded && (
+        <div className="px-5 py-3 bg-white border-b border-slate-100 flex-shrink-0">
+          <h2 className="text-sm font-semibold text-slate-700">Companies hiring on Rill</h2>
+          <p className="text-xs text-slate-400 mt-0.5">Browse open roles from recruiters on the platform</p>
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto px-5 py-4">
         {loading && (
