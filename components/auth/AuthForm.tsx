@@ -98,7 +98,7 @@ export default function AuthForm() {
         {mode === "signup" && (
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1.5">
-              Full name
+              Full name/Company Name
             </label>
             <input
               type="text"

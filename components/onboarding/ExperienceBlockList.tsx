@@ -19,7 +19,7 @@ const SOURCE_ICONS: Record<string, string> = {
   other: "🔗",
 };
 
-function BlockDetail({ block, onClose, isRecruiter = false }: { block: Block; onClose: () => void; isRecruiter?: boolean }) {
+function BlockDetail({ block, onClose, is_recruiter = false }: { block: Block; onClose: () => void; is_recruiter?: boolean }) {
   // Close on backdrop click
   function handleBackdrop(e: React.MouseEvent<HTMLDivElement>) {
     if (e.target === e.currentTarget) onClose();
@@ -65,7 +65,7 @@ function BlockDetail({ block, onClose, isRecruiter = false }: { block: Block; on
         {/* URLs */}
         {urls.length > 0 && (
           <div className="space-y-1.5">
-            <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">{isRecruiter ? "Application Links" : "Links"}</p>
+            <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">{is_recruiter ? "Application Links" : "Links"}</p>
             <div className="space-y-1">
               {urls.map(({ label, href }) => (
                 <a
@@ -86,14 +86,14 @@ function BlockDetail({ block, onClose, isRecruiter = false }: { block: Block; on
         )}
 
         {urls.length === 0 && (
-          <p className="text-xs text-slate-400 italic">{isRecruiter ? "No application link yet — share a job posting or ATS URL in the chat." : "No links yet — share a repo or demo URL in the chat to boost your ranking."}</p>
+          <p className="text-xs text-slate-400 italic">{is_recruiter ? "No application link yet — share a job posting or ATS URL in the chat." : "No links yet — share a repo or demo URL in the chat to boost your ranking."}</p>
         )}
       </div>
     </div>
   );
 }
 
-export default function ExperienceBlockList({ userId, isRecruiter = false }: { userId: string; isRecruiter?: boolean }) {
+export default function ExperienceBlockList({ userId, is_recruiter = false }: { userId: string; is_recruiter?: boolean }) {
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [selected, setSelected] = useState<Block | null>(null);
   const seenIds = useRef(new Set<string>());
@@ -136,7 +136,7 @@ export default function ExperienceBlockList({ userId, isRecruiter = false }: { u
             key={i}
             className="h-12 bg-slate-50 rounded-lg border border-dashed border-slate-200 flex items-center px-3"
           >
-            <span className="text-xs text-slate-400">{isRecruiter ? `Job opening ${i}` : `Experience block ${i}`}</span>
+            <span className="text-xs text-slate-400">{is_recruiter ? `Job opening ${i}` : `Experience block ${i}`}</span>
           </div>
         ))}
       </div>
@@ -160,7 +160,7 @@ export default function ExperienceBlockList({ userId, isRecruiter = false }: { u
       </div>
 
       {selected && (
-        <BlockDetail block={selected} onClose={() => setSelected(null)} isRecruiter={isRecruiter} />
+        <BlockDetail block={selected} onClose={() => setSelected(null)} is_recruiter={is_recruiter} />
       )}
     </>
   );

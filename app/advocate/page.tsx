@@ -21,14 +21,16 @@ export default async function AdvocatePage({
 
   const db = getServerClient();
 
-  // Always fetch the logged-in user's own display_name for the self-mode greeting.
-  // Also fetch the target candidate's name when in recruiter mode.
   const isRecruiterMode = !!targetUserId && targetUserId !== user.id;
 
-  const candidateProfile = isRecruiterMode
-    ? await db.from("user_profiles").select("display_name").eq("user_id", targetUserId).single()
-    : null;
+  const [selfProfile, candidateProfile] = await Promise.all([
+    db.from("user_profiles").select("is_recruiter").eq("user_id", user.id).single(),
+    isRecruiterMode
+      ? db.from("user_profiles").select("display_name").eq("user_id", targetUserId!).single()
+      : Promise.resolve(null),
+  ]);
 
+  const is_recruiter = selfProfile.data?.is_recruiter ?? false;
   const candidateName = candidateProfile?.data?.display_name ?? undefined;
 
   const pageTitle = candidateName ? `Advocate · ${candidateName}` : "Advocate";
@@ -58,6 +60,7 @@ export default async function AdvocatePage({
             <AdvocateChatWindow
               targetUserId={targetUserId}
               candidateName={candidateName}
+              is_recruiter={is_recruiter}
             />
           </div>
         </div>

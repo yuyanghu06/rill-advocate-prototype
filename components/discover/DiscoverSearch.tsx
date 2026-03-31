@@ -27,9 +27,9 @@ type SearchParams = {
   sort: string;
 };
 
-export default function DiscoverSearch({ isRecruiter = false }: { isRecruiter?: boolean }) {
+export default function DiscoverSearch({ is_recruiter = false }: { is_recruiter?: boolean }) {
   // Candidates browse company profiles; recruiters search for candidates.
-  if (!isRecruiter) return <CompanyFeed />;
+  if (!is_recruiter) return <CompanyFeed />;
 
   const [query, setQuery] = useState("");
   const [alpha, setAlpha] = useState(0.65);

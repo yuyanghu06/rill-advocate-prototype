@@ -16,7 +16,7 @@ export default async function DiscoverPage() {
     .select("is_recruiter")
     .eq("user_id", user.id)
     .single();
-  const isRecruiter = profile?.is_recruiter ?? false;
+  const is_recruiter = profile?.is_recruiter ?? false;
 
   return (
     <div className="flex h-screen bg-slate-50">
@@ -27,7 +27,7 @@ export default async function DiscoverPage() {
           <span className="text-sm font-semibold text-slate-700">Discover</span>
         </header>
 
-        <DiscoverSearch isRecruiter={isRecruiter} />
+        <DiscoverSearch is_recruiter={is_recruiter} />
       </div>
     </div>
   );

@@ -29,7 +29,7 @@ function extractRedirects(raw: string): { text: string; redirects: RedirectPaylo
   return { text, redirects };
 }
 
-const TOOL_LABELS: Record<string, string> = {
+const TOOL_LABELS_CANDIDATE: Record<string, string> = {
   save_experience_block: "Saving experience",
   update_experience_block: "Updating experience",
   upsert_skills: "Updating skills",
@@ -37,7 +37,24 @@ const TOOL_LABELS: Record<string, string> = {
   redirect_user: "Preparing link",
 };
 
-export default function ChatWindow({ userId }: { userId: string }) {
+const TOOL_LABELS_RECRUITER: Record<string, string> = {
+  save_experience_block: "Saving job opening",
+  update_experience_block: "Updating job opening",
+  upsert_skills: "Updating required skills",
+  fetch_github_repos: "Fetching GitHub data",
+  redirect_user: "Preparing link",
+};
+
+const CANDIDATE_GREETING =
+  "Hey! I'm Advocate — I'll help you build a profile that gets you noticed by the right recruiters.\n\nTo get started, share any of the following:\n• Your resume (paste the text below)\n• Your LinkedIn URL\n• Your GitHub URL\n\nYou can share as many or as few as you have. What would you like to start with?";
+
+const RECRUITER_GREETING =
+  "Hey! I'm Advocate — I'll help candidates get to know more about your company.\n\nTo get started, share any of the following:\n• A job description (paste text or upload a PDF)\n• Your company's careers page or ATS URL\n• A specific job posting URL\n\nYou can add as many open roles as you'd like. What would you like to start with?";
+
+const RESUME_PREFIX = "Here is my resume:\n\n";
+const JD_PREFIX = "Here is a job description:\n\n";
+
+export default function ChatWindow({ userId, is_recruiter = false }: { userId: string; is_recruiter?: boolean }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [showUploader, setShowUploader] = useState(false);
@@ -67,8 +84,6 @@ export default function ChatWindow({ userId }: { userId: string }) {
     const { session } = await res.json();
 
     if (session?.messages?.length) {
-      const RESUME_PREFIX = "Here is my resume:\n\n";
-
       function extractText(content: string | { type: string; text?: string }[]): string {
         if (typeof content === "string") return content;
         return content
@@ -84,14 +99,14 @@ export default function ChatWindow({ userId }: { userId: string }) {
 
           const content = stripFinalizeTag(extractRedirects(rawText).text);
           if (m.role === "user" && rawText.startsWith(RESUME_PREFIX)) {
-            const resumeText = rawText.slice(RESUME_PREFIX.length);
-            const wordCount = resumeText.trim().split(/\s+/).length;
-            return {
-              id: String(i),
-              role: "user" as const,
-              content,
-              display: `📄 Resume — ${wordCount.toLocaleString()} words`,
-            };
+            const bodyText = rawText.slice(RESUME_PREFIX.length);
+            const wordCount = bodyText.trim().split(/\s+/).length;
+            return { id: String(i), role: "user" as const, content, display: `📄 Resume — ${wordCount.toLocaleString()} words` };
+          }
+          if (m.role === "user" && rawText.startsWith(JD_PREFIX)) {
+            const bodyText = rawText.slice(JD_PREFIX.length);
+            const wordCount = bodyText.trim().split(/\s+/).length;
+            return { id: String(i), role: "user" as const, content, display: `📄 Job description — ${wordCount.toLocaleString()} words` };
           }
           return {
             id: String(i),
@@ -103,14 +118,7 @@ export default function ChatWindow({ userId }: { userId: string }) {
       setMessages(loaded);
       if (session.step === "complete") setSessionComplete(true);
     } else {
-      setMessages([
-        {
-          id: "0",
-          role: "advocate",
-          content:
-            "Hey! I'm Advocate — I'll help you build a profile that gets you noticed by the right recruiters.\n\nTo get started, share any of the following:\n• Your resume (paste the text below)\n• Your LinkedIn URL\n• Your GitHub URL\n\nYou can share as many or as few as you have. What would you like to start with?",
-        },
-      ]);
+      setMessages([{ id: "0", role: "advocate", content: is_recruiter ? RECRUITER_GREETING : CANDIDATE_GREETING }]);
     }
   }
 
@@ -224,19 +232,20 @@ export default function ChatWindow({ userId }: { userId: string }) {
     const label = { linkedin: "LinkedIn", github: "GitHub", other: "Link" }[type];
     let hostname = url;
     try { hostname = new URL(url).hostname.replace("www.", ""); } catch { /* keep raw */ }
-    sendMessage(
-      `Here is my ${type} profile: ${url}`,
-      `🔗 ${label} added — ${hostname}`
-    );
+    const message = is_recruiter
+      ? `Here is our company ${type === "other" ? "page" : type + " page"}: ${url}`
+      : `Here is my ${type} profile: ${url}`;
+    sendMessage(message, `🔗 ${label} added — ${hostname}`);
     setShowUploader(false);
   }
 
   function handleResumeText(text: string, filename: string) {
     const wordCount = text.trim().split(/\s+/).length;
-    sendMessage(
-      `Here is my resume:\n\n${text}`,
-      `📄 ${filename} — ${wordCount.toLocaleString()} words`
-    );
+    if (is_recruiter) {
+      sendMessage(`${JD_PREFIX}${text}`, `📄 ${filename} — job description, ${wordCount.toLocaleString()} words`);
+    } else {
+      sendMessage(`${RESUME_PREFIX}${text}`, `📄 ${filename} — ${wordCount.toLocaleString()} words`);
+    }
     setShowUploader(false);
   }
 
@@ -257,7 +266,7 @@ export default function ChatWindow({ userId }: { userId: string }) {
           <div className="flex items-center gap-2 pl-9">
             <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-pulse flex-shrink-0" />
             <span className="text-xs text-slate-400 italic">
-              {TOOL_LABELS[toolStatus] ?? toolStatus}…
+              {(is_recruiter ? TOOL_LABELS_RECRUITER : TOOL_LABELS_CANDIDATE)[toolStatus] ?? toolStatus}…
             </span>
           </div>
         )}
@@ -303,14 +312,14 @@ export default function ChatWindow({ userId }: { userId: string }) {
         {sessionComplete && !finalized && (
           <div className="bg-brand-50 border border-brand-100 rounded-2xl p-4 text-center space-y-3">
             <p className="text-sm font-medium text-brand-800">
-              Your profile is ready to save!
+              {is_recruiter ? "Your company profile is ready to save!" : "Your profile is ready to save!"}
             </p>
             <button
               onClick={handleFinalize}
               disabled={finalizing}
               className="bg-brand-500 hover:bg-brand-600 disabled:bg-slate-200 text-white disabled:text-slate-400 font-medium text-sm px-6 py-2.5 rounded-xl transition-colors"
             >
-              {finalizing ? "Saving…" : "Confirm & save profile"}
+              {finalizing ? "Saving…" : is_recruiter ? "Confirm & save company profile" : "Confirm & save profile"}
             </button>
           </div>
         )}
@@ -318,13 +327,15 @@ export default function ChatWindow({ userId }: { userId: string }) {
         {finalized && (
           <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-center">
             <p className="text-sm font-semibold text-emerald-700">
-              Profile saved! You&apos;re now discoverable by recruiters.
+              {is_recruiter
+                ? "Company profile saved! Candidates can now discover your open roles."
+                : "Profile saved! You're now discoverable by recruiters."}
             </p>
             <a
               href={`/profile/${userId}`}
               className="inline-block mt-2 text-xs text-emerald-600 hover:underline"
             >
-              View your profile →
+              {is_recruiter ? "View your company profile →" : "View your profile →"}
             </a>
           </div>
         )}

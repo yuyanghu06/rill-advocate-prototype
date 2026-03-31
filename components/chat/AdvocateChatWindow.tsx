@@ -10,13 +10,22 @@ type HistoryEntry = { role: "user" | "assistant"; content: string };
 type Props = {
   targetUserId?: string;
   candidateName?: string;
+  is_recruiter?: boolean;
 };
 
-export default function AdvocateChatWindow({ targetUserId, candidateName }: Props = {}) {
+export default function AdvocateChatWindow({ targetUserId, candidateName, is_recruiter = false }: Props = {}) {
   const isRecruiterMode = !!targetUserId;
   const subjectName = isRecruiterMode ? (candidateName ?? "this candidate") : "your";
   const apostrophe = isRecruiterMode ? "'s" : "";
-  const greeting = `I'm Advocate — ask me anything about ${subjectName}${apostrophe} experiences, projects, or skills.`;
+
+  let greeting: string;
+  if (isRecruiterMode) {
+    greeting = `I'm Advocate — ask me anything about ${subjectName}${apostrophe} experiences, projects, or skills.`;
+  } else if (is_recruiter) {
+    greeting = "I'm Advocate — ask me anything about your company profile, job openings, or required skills.";
+  } else {
+    greeting = "I'm Advocate — ask me anything about your experiences, projects, or skills.";
+  }
 
   const [messages, setMessages] = useState<Message[]>([
     { id: "0", role: "advocate", content: greeting },

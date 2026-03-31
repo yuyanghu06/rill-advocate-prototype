@@ -24,7 +24,7 @@ import type Anthropic from "@anthropic-ai/sdk";
  */
 
 const ADVOCATE_PROMPT_TEMPLATE = readFileSync(
-  join(process.cwd(), "prompts", "advocate.md"),
+  join(process.cwd(), "prompts", "advocate-chat.md"),
   "utf-8"
 );
 

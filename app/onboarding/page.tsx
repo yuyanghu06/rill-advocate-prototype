@@ -18,7 +18,7 @@ export default async function OnboardingPage() {
     .select("is_recruiter")
     .eq("user_id", user.id)
     .single();
-  const isRecruiter = profile?.is_recruiter ?? false;
+  const is_recruiter = profile?.is_recruiter ?? false;
 
   return (
     <div className="flex h-screen bg-slate-50">
@@ -38,7 +38,7 @@ export default async function OnboardingPage() {
         {/* Main area */}
         <div className="flex flex-1 overflow-hidden px-4 py-4 gap-4">
           <div className="flex-1 bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col">
-            <ChatWindow userId={user.id} />
+            <ChatWindow userId={user.id} is_recruiter={is_recruiter} />
           </div>
 
           <aside className="hidden lg:flex w-72 flex-col gap-3 overflow-y-auto min-h-0">
@@ -59,12 +59,12 @@ export default async function OnboardingPage() {
               </div>
 
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">
-                {isRecruiter ? "Job Openings" : "Experiences"}
+                {is_recruiter ? "Job Openings" : "Experiences"}
               </p>
-              <ExperienceBlockList userId={user.id} isRecruiter={isRecruiter} />
+              <ExperienceBlockList userId={user.id} is_recruiter={is_recruiter} />
             </div>
 
-            <SkillsList userId={user.id} isRecruiter={isRecruiter} />
+            <SkillsList userId={user.id} is_recruiter={is_recruiter} />
           </aside>
         </div>
       </div>
