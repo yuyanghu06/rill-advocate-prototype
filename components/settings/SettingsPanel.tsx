@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { getBrowserClient } from "@/lib/supabase";
+import AvatarCropper from "./AvatarCropper";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -20,6 +21,7 @@ type Profile = {
   is_visible: boolean;
   is_recruiter: boolean;
   company_name: string | null;
+  avatar_url: string | null;
 };
 
 type Props = {
@@ -206,6 +208,12 @@ function ProfileTab({ profile }: { profile: Profile }) {
 
   return (
     <div className="space-y-6 max-w-md">
+      <AvatarCropper
+        displayName={profile.display_name}
+        initialAvatarUrl={profile.avatar_url}
+        onUploadComplete={() => {}}
+      />
+
       {/* Company name — recruiters only */}
       {profile.is_recruiter && (
         <section>

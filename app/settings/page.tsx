@@ -1,19 +1,18 @@
 import { redirect } from "next/navigation";
 import Sidebar from "@/components/dashboard/Sidebar";
 import SettingsPanel from "@/components/settings/SettingsPanel";
-import { getAuthServerClient } from "@/lib/supabase.server";
+import { getSessionUser } from "@/lib/supabase.server";
 import { getServerClient } from "@/lib/supabase";
 
 export default async function SettingsPage() {
-  const supabase = await getAuthServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) redirect("/auth?next=/settings");
 
   const db = getServerClient();
   const [profileResult, blocksResult] = await Promise.all([
     db
       .from("user_profiles")
-      .select("display_name, headline, is_visible, is_recruiter, company_name")
+      .select("display_name, headline, is_visible, is_recruiter, company_name, avatar_url")
       .eq("user_id", user.id)
       .single(),
     db
@@ -29,6 +28,7 @@ export default async function SettingsPage() {
     is_visible: profileResult.data?.is_visible ?? true,
     is_recruiter: profileResult.data?.is_recruiter ?? false,
     company_name: profileResult.data?.company_name ?? null,
+    avatar_url: profileResult.data?.avatar_url ?? null,
   };
 
   const blocks = (blocksResult.data ?? []).map((b) => ({

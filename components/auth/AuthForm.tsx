@@ -19,6 +19,7 @@ export default function AuthForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmSent, setConfirmSent] = useState(false);
+  const [signedIn, setSignedIn] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -49,12 +50,29 @@ export default function AuthForm() {
       if (error) {
         setError(error.message);
       } else {
-        router.push(next);
-        router.refresh();
+        setSignedIn(true);
+        setTimeout(() => {
+          router.push(next);
+          router.refresh();
+        }, 1200);
       }
     }
 
     setLoading(false);
+  }
+
+  if (signedIn) {
+    return (
+      <div className="text-center space-y-3">
+        <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mx-auto">
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <h2 className="text-lg font-semibold text-slate-900">Signed in!</h2>
+        <p className="text-sm text-slate-500">Taking you to your dashboard…</p>
+      </div>
+    );
   }
 
   if (confirmSent) {

@@ -65,6 +65,7 @@ export type DiscoverCandidate = RankedCandidate & {
   keyword_score?: number;
   semantic_score?: number;
   final_score?: number;
+  avatar_url?: string;
 };
 
 export type DiscoverFilters = {

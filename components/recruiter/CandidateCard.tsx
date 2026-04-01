@@ -1,3 +1,4 @@
+import Image from "next/image";
 import RankingBadge from "@/components/profile/RankingBadge";
 import type { DiscoverCandidate, RankedCandidate } from "@/types";
 
@@ -38,8 +39,8 @@ function renderHighlighted(text: string, terms: string[]) {
 
 export default function CandidateCard({ candidate, queryTerms = [] }: Props) {
   const dc = candidate as DiscoverCandidate;
-  const { user_id, display_name, ranking_score, matching_blocks, similarity } =
-    candidate;
+  const { user_id, display_name, ranking_score, matching_blocks, similarity } = candidate;
+  const avatarUrl = dc.avatar_url;
 
   const matchPct =
     dc.final_score != null
@@ -53,10 +54,20 @@ export default function CandidateCard({ candidate, queryTerms = [] }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-full bg-brand-100 flex items-center justify-center flex-shrink-0">
-            <span className="text-brand-700 font-bold text-sm">
-              {(display_name ?? user_id).charAt(0).toUpperCase()}
-            </span>
+          <div className="w-9 h-9 rounded-full bg-brand-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+            {avatarUrl ? (
+              <Image
+                src={avatarUrl}
+                alt={display_name ?? "Candidate"}
+                width={36}
+                height={36}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="text-brand-700 font-bold text-sm">
+                {(display_name ?? user_id).charAt(0).toUpperCase()}
+              </span>
+            )}
           </div>
           <div className="min-w-0">
             <p className="font-semibold text-slate-900 text-sm leading-tight truncate">

@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
   const { data: profiles } = await supabase
     .from("user_profiles")
     .select(
-      "user_id, ranking_score, display_name, headline, top_skills, skills, helper_url_count"
+      "user_id, ranking_score, display_name, headline, top_skills, skills, helper_url_count, avatar_url"
     )
     .eq("is_visible", true)
     .eq("is_recruiter", false)
@@ -107,6 +107,7 @@ export async function POST(req: NextRequest) {
       top_skills: string[] | null;
       skills: Record<string, number> | null;
       helper_url_count: number | null;
+      avatar_url: string | null;
     }) => [p.user_id, p])
   );
 
@@ -199,6 +200,7 @@ export async function POST(req: NextRequest) {
       keyword_score: kwScore,
       semantic_score: normSemantic,
       final_score: finalScore,
+      avatar_url: profile?.avatar_url ?? undefined,
     };
   });
 

@@ -16,6 +16,7 @@ export async function PATCH(req: NextRequest) {
     headline?: string;
     is_visible?: boolean;
     company_name?: string;
+    avatar_url?: string | null;
   };
 
   const updates: Record<string, unknown> = {};
@@ -23,6 +24,7 @@ export async function PATCH(req: NextRequest) {
   if (body.headline !== undefined) updates.headline = body.headline.trim();
   if (body.is_visible !== undefined) updates.is_visible = body.is_visible;
   if (body.company_name !== undefined) updates.company_name = body.company_name.trim() || null;
+  if (body.avatar_url !== undefined) updates.avatar_url = body.avatar_url;
 
   if (!Object.keys(updates).length) {
     return NextResponse.json({ error: "No fields to update" }, { status: 400 });

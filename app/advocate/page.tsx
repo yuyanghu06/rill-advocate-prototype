@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Sidebar from "@/components/dashboard/Sidebar";
 import AdvocateChatWindow from "@/components/chat/AdvocateChatWindow";
 import ProfilePopup from "@/components/profile/ProfilePopup";
-import { getAuthServerClient } from "@/lib/supabase.server";
+import { getSessionUser } from "@/lib/supabase.server";
 import { getServerClient } from "@/lib/supabase";
 
 export default async function AdvocatePage({
@@ -10,10 +10,7 @@ export default async function AdvocatePage({
 }: {
   searchParams: Promise<{ with?: string }>;
 }) {
-  const supabase = await getAuthServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser();
 
   if (!user) redirect("/auth?next=/advocate");
 

@@ -22,3 +22,13 @@ export async function getAuthServerClient() {
     }
   );
 }
+
+// ── Session user (server components on protected routes) ─────────────────────
+// Decodes the JWT from the cookie — no network call to Supabase.
+// Safe to use in page components because middleware already verified the
+// session with getUser() and redirected unauthenticated requests.
+export async function getSessionUser() {
+  const supabase = await getAuthServerClient();
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.user ?? null;
+}

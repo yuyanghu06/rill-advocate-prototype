@@ -1,12 +1,11 @@
 import { redirect } from "next/navigation";
 import Sidebar from "@/components/dashboard/Sidebar";
 import DiscoverSearch from "@/components/discover/DiscoverSearch";
-import { getAuthServerClient } from "@/lib/supabase.server";
+import { getSessionUser } from "@/lib/supabase.server";
 import { getServerClient } from "@/lib/supabase";
 
 export default async function DiscoverPage() {
-  const supabase = await getAuthServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
 
   if (!user) redirect("/auth?next=/discover");
 

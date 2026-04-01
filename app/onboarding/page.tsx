@@ -3,12 +3,11 @@ import ChatWindow from "@/components/chat/ChatWindow";
 import ExperienceBlockList from "@/components/onboarding/ExperienceBlockList";
 import SkillsList from "@/components/onboarding/SkillsList";
 import Sidebar from "@/components/dashboard/Sidebar";
-import { getAuthServerClient } from "@/lib/supabase.server";
+import { getSessionUser } from "@/lib/supabase.server";
 import { getServerClient } from "@/lib/supabase";
 
 export default async function OnboardingPage() {
-  const supabase = await getAuthServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
 
   if (!user) redirect("/auth?next=/onboarding");
 
