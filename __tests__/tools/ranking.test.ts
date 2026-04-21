@@ -1,6 +1,6 @@
 import { describe, it, expect } from "bun:test";
-import { computeRankingScore } from "@/lib/ranking";
-import type { ExperienceBlock } from "@/types";
+import { computeRankingScore } from "../../lib/ranking";
+import type { ExperienceBlock } from "../../types";
 
 function makeBlock(overrides: Partial<ExperienceBlock> = {}): ExperienceBlock {
   return {

@@ -83,7 +83,7 @@ afterEach(() => {
 
 // ─── Dynamic import after fetch is patchable ─────────────────────────────────
 
-const { handleFetchGithubRepos } = await import("@/lib/tools/fetchGithubRepos");
+const { handleFetchGithubRepos } = await import("../../lib/tools/fetchGithubRepos");
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 

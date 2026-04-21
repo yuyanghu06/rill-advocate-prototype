@@ -9,6 +9,7 @@ type ProfileData = {
   user_id: string;
   display_name: string | null;
   headline: string | null;
+  capability_bullets: string[];
   ranking_score: number;
   blocks: {
     block_id: string;
@@ -31,7 +32,7 @@ async function getProfile(userId: string): Promise<ProfileData | null> {
       .order("date_range", { ascending: false }),
     db
       .from("user_profiles")
-      .select("ranking_score, display_name, headline")
+      .select("ranking_score, display_name, headline, capability_bullets")
       .eq("user_id", userId)
       .single(),
   ]);
@@ -42,6 +43,7 @@ async function getProfile(userId: string): Promise<ProfileData | null> {
     user_id: userId,
     display_name: profileResult.data?.display_name ?? null,
     headline: profileResult.data?.headline ?? null,
+    capability_bullets: profileResult.data?.capability_bullets ?? [],
     ranking_score: profileResult.data?.ranking_score ?? 0,
     blocks: blocksResult.data.map((b) => ({
       ...b,
@@ -99,6 +101,25 @@ export default async function ProfilePage({
           </div>
           <RankingBadge score={profile.ranking_score} />
         </div>
+
+        {/* What I can do */}
+        {profile.capability_bullets.length > 0 && (
+          <section className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+            <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-widest mb-3">
+              What I can do
+            </h2>
+            <ul className="space-y-1.5">
+              {profile.capability_bullets.map((bullet, i) => (
+                <li
+                  key={i}
+                  className="text-sm text-slate-700 pl-4 relative before:content-['—'] before:absolute before:left-0 before:text-slate-400"
+                >
+                  {bullet}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {/* Skills */}
         <SkillsList userId={userId} />

@@ -3,6 +3,7 @@ import { getServerClient } from "@/lib/supabase";
 import { embedText } from "@/lib/embeddings";
 import { computeRankingScore } from "@/lib/ranking";
 import { refreshUserHeadline } from "@/lib/tools/refreshUserHeadline";
+import { refreshCapabilityBullets } from "@/lib/tools/refreshCapabilityBullets";
 import type { ExperienceBlock } from "@/types";
 
 export const saveExperienceBlockTool: Anthropic.Tool = {
@@ -115,6 +116,11 @@ export async function handleSaveExperienceBlock(input: SaveInput) {
   // Regenerate headline from all block titles (fire-and-forget — don't block the response)
   refreshUserHeadline(input.user_id).catch((err) =>
     console.error("[refreshUserHeadline] save error", err)
+  );
+
+  // Regenerate capability bullets (fire-and-forget)
+  refreshCapabilityBullets(input.user_id).catch((err) =>
+    console.error("[refreshCapabilityBullets] save error", err)
   );
 
   return {

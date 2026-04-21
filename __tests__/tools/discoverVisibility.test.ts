@@ -79,17 +79,24 @@ const state = {
 
 // ── Module mocks ──────────────────────────────────────────────────────────────
 
+// Chainable `.eq()` builder so the mock supports any number of filter calls
+// before `.limit()` resolves. The route currently chains
+// `.eq("is_visible", true).eq("is_recruiter", false)`.
+function makeEqChain() {
+  const chain = {
+    eq: (_col: string, _val: unknown) => chain,
+    limit: (_n: number) =>
+      Promise.resolve({ data: state.profiles, error: null }),
+  };
+  return chain;
+}
+
 mock.module("@/lib/supabase", () => ({
   getServerClient: () => ({
     rpc: (_fn: string, _args: unknown) =>
       Promise.resolve({ data: state.rpcBlocks, error: null }),
     from: (_table: string) => ({
-      select: (_cols: string) => ({
-        eq: (_col: string, _val: unknown) => ({
-          limit: (_n: number) =>
-            Promise.resolve({ data: state.profiles, error: null }),
-        }),
-      }),
+      select: (_cols: string) => makeEqChain(),
     }),
   }),
 }));

@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
   const { data: profiles } = await supabase
     .from("user_profiles")
     .select(
-      "user_id, ranking_score, display_name, headline, top_skills, skills, helper_url_count, avatar_url"
+      "user_id, ranking_score, display_name, headline, top_skills, capability_bullets, skills, helper_url_count, avatar_url"
     )
     .eq("is_visible", true)
     .eq("is_recruiter", false)
@@ -105,6 +105,7 @@ export async function POST(req: NextRequest) {
       display_name: string | null;
       headline: string | null;
       top_skills: string[] | null;
+      capability_bullets: string[] | null;
       skills: Record<string, number> | null;
       helper_url_count: number | null;
       avatar_url: string | null;
@@ -193,6 +194,7 @@ export async function POST(req: NextRequest) {
       display_name: profile?.display_name ?? undefined,
       headline: profile?.headline ?? undefined,
       top_skills: profile?.top_skills ?? [],
+      capability_bullets: profile?.capability_bullets ?? [],
       helper_url_count: profile?.helper_url_count ?? 0,
       ranking_score: rankingScore,
       matching_blocks: entry?.blocks ?? [],

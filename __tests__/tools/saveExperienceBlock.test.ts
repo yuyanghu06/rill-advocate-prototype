@@ -3,7 +3,7 @@ import { describe, it, expect, mock, beforeEach } from "bun:test";
 // ─── Mutable state shared across all tests ───────────────────────────────────
 // Each test resets these before running so mocks never bleed across tests.
 
-type InsertResult = { error: string | null };
+type InsertResult = { error: { message: string } | null };
 type AllBlocksResult = { data: { helper_urls: string[] }[]; error: null };
 
 const state = {
@@ -46,9 +46,10 @@ mock.module("@/lib/embeddings", () => ({
   },
 }));
 
-// Dynamic import AFTER mocks are registered
+// Dynamic import AFTER mocks are registered. Relative path because bun test
+// doesn't resolve `@/` from __tests__/ (excluded from the main tsconfig).
 const { handleSaveExperienceBlock } = await import(
-  "@/lib/tools/saveExperienceBlock"
+  "../../lib/tools/saveExperienceBlock"
 );
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -56,7 +57,7 @@ const { handleSaveExperienceBlock } = await import(
 const BASE_INPUT = {
   user_id: "user-abc-123",
   title: "Software Engineer at Stripe",
-  overview: "Built payment infrastructure used by millions.",
+  embedded_text: "Built payment infrastructure used by millions.",
   source_type: "resume" as const,
 };
 
@@ -91,7 +92,9 @@ describe("handleSaveExperienceBlock", () => {
   });
 
   it("returns success: false with the DB error message when insert fails", async () => {
-    state.insertResult = { error: "duplicate key value violates unique constraint" };
+    state.insertResult = {
+      error: { message: "duplicate key value violates unique constraint" },
+    };
     const result = await handleSaveExperienceBlock(BASE_INPUT);
     expect(result.success).toBe(false);
     if (result.success) return;
@@ -100,23 +103,20 @@ describe("handleSaveExperienceBlock", () => {
 
   // ── Block field population ───────────────────────────────────────────────────
 
-  it("inserts a block with the correct user_id, title, and overview", async () => {
+  it("inserts a block with the correct user_id and title", async () => {
     await handleSaveExperienceBlock(BASE_INPUT);
     expect(state.lastInsertedBlock?.user_id).toBe(BASE_INPUT.user_id);
     expect(state.lastInsertedBlock?.title).toBe(BASE_INPUT.title);
-    expect(state.lastInsertedBlock?.overview).toBe(BASE_INPUT.overview);
   });
 
-  it("constructs embedded_text as 'title + space + overview'", async () => {
+  it("stores the embedded_text passed in by the caller", async () => {
     await handleSaveExperienceBlock(BASE_INPUT);
-    const expected = `${BASE_INPUT.title} ${BASE_INPUT.overview}`;
-    expect(state.lastInsertedBlock?.embedded_text).toBe(expected);
+    expect(state.lastInsertedBlock?.embedded_text).toBe(BASE_INPUT.embedded_text);
   });
 
-  it("calls embedText with the constructed embedded_text", async () => {
+  it("calls embedText with the embedded_text input", async () => {
     await handleSaveExperienceBlock(BASE_INPUT);
-    const expected = `${BASE_INPUT.title} ${BASE_INPUT.overview}`;
-    expect(state.embedTextCalledWith).toBe(expected);
+    expect(state.embedTextCalledWith).toBe(BASE_INPUT.embedded_text);
   });
 
   it("stores the embedding returned by embedText", async () => {
@@ -185,7 +185,7 @@ describe("handleSaveExperienceBlock", () => {
   });
 
   it("does NOT upsert user_profiles when insert fails", async () => {
-    state.insertResult = { error: "insert failed" };
+    state.insertResult = { error: { message: "insert failed" } };
     await handleSaveExperienceBlock(BASE_INPUT);
     expect(state.lastUpsertedProfile).toBeNull();
   });

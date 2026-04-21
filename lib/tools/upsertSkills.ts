@@ -1,5 +1,6 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { getServerClient } from "@/lib/supabase";
+import { refreshCapabilityBullets } from "@/lib/tools/refreshCapabilityBullets";
 import type { SkillsMap } from "@/types";
 
 export const upsertSkillsTool: Anthropic.Tool = {
@@ -73,6 +74,11 @@ export async function handleUpsertSkills(input: UpsertSkillsInput) {
   if (error) {
     return { success: false, message: error.message };
   }
+
+  // Regenerate capability bullets (fire-and-forget) — skills feed the prompt.
+  refreshCapabilityBullets(input.user_id).catch((err) =>
+    console.error("[refreshCapabilityBullets] upsertSkills error", err)
+  );
 
   return {
     success: true,

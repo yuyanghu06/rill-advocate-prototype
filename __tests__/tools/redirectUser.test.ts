@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { handleRedirectUser, REDIRECT_MARKER_PREFIX, REDIRECT_MARKER_SUFFIX } from "@/lib/tools/redirectUser";
+import { handleRedirectUser, REDIRECT_MARKER_PREFIX, REDIRECT_MARKER_SUFFIX } from "../../lib/tools/redirectUser";
 
 describe("handleRedirectUser", () => {
   const baseInput = {

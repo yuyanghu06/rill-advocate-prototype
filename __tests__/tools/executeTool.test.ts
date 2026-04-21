@@ -34,7 +34,20 @@ mock.module("@/lib/tools/redirectUser", () => ({
   REDIRECT_MARKER_SUFFIX: "\x00",
 }));
 
-const { executeTool } = await import("@/lib/tools/index");
+// Stub the other two handlers too — index.ts imports them transitively, and
+// their real implementations pull in openai/embeddings which fails at
+// construction when OPENAI_API_KEY isn't set in the test env.
+mock.module("@/lib/tools/updateExperienceBlock", () => ({
+  updateExperienceBlockTool: {},
+  handleUpdateExperienceBlock: mock(async () => ({ success: true })),
+}));
+
+mock.module("@/lib/tools/upsertSkills", () => ({
+  upsertSkillsTool: {},
+  handleUpsertSkills: mock(async () => ({ success: true })),
+}));
+
+const { executeTool } = await import("../../lib/tools/index");
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
@@ -55,6 +68,8 @@ describe("executeTool dispatcher", () => {
   it("injects the userId from executeTool into the save_experience_block call", async () => {
     // The dispatcher does { ...input, user_id: userId } so the handler
     // always receives the server-resolved userId, not whatever Claude passed.
+    // Use the same specifier as the mock.module() registration so bun
+    // returns the mocked object (not the real module, which pulls openai).
     const { handleSaveExperienceBlock } = await import(
       "@/lib/tools/saveExperienceBlock"
     );

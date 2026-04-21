@@ -1,8 +1,8 @@
-import { saveExperienceBlockTool, handleSaveExperienceBlock } from "./saveExperienceBlock";
-import { updateExperienceBlockTool, handleUpdateExperienceBlock } from "./updateExperienceBlock";
-import { upsertSkillsTool, handleUpsertSkills } from "./upsertSkills";
-import { fetchGithubReposTool, handleFetchGithubRepos } from "./fetchGithubRepos";
-import { redirectUserTool, handleRedirectUser, type RedirectPayload } from "./redirectUser";
+import { saveExperienceBlockTool, handleSaveExperienceBlock } from "@/lib/tools/saveExperienceBlock";
+import { updateExperienceBlockTool, handleUpdateExperienceBlock } from "@/lib/tools/updateExperienceBlock";
+import { upsertSkillsTool, handleUpsertSkills } from "@/lib/tools/upsertSkills";
+import { fetchGithubReposTool, handleFetchGithubRepos } from "@/lib/tools/fetchGithubRepos";
+import { redirectUserTool, handleRedirectUser, type RedirectPayload } from "@/lib/tools/redirectUser";
 import type Anthropic from "@anthropic-ai/sdk";
 
 export { handleSaveExperienceBlock, handleUpdateExperienceBlock, handleUpsertSkills, handleFetchGithubRepos, handleRedirectUser };

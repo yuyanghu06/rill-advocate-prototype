@@ -83,6 +83,20 @@ export default function CandidateCard({ candidate, queryTerms = [] }: Props) {
         <RankingBadge score={ranking_score} />
       </div>
 
+      {/* Capability bullets */}
+      {dc.capability_bullets && dc.capability_bullets.length > 0 && (
+        <ul className="space-y-1">
+          {dc.capability_bullets.slice(0, 3).map((bullet, i) => (
+            <li
+              key={i}
+              className="text-xs text-slate-600 leading-snug pl-3 relative before:content-['—'] before:absolute before:left-0 before:text-slate-400 line-clamp-2"
+            >
+              {bullet}
+            </li>
+          ))}
+        </ul>
+      )}
+
       {/* Skill pills */}
       {dc.top_skills && dc.top_skills.length > 0 && (
         <div className="flex flex-wrap gap-1.5">

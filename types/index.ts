@@ -61,6 +61,7 @@ export type RankedCandidate = {
 export type DiscoverCandidate = RankedCandidate & {
   headline?: string;
   top_skills?: string[];
+  capability_bullets?: string[];
   helper_url_count?: number;
   keyword_score?: number;
   semantic_score?: number;

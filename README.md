@@ -86,7 +86,8 @@ rill-advocate/
 │       ├── upsertSkills.ts                 # Tool: write skills map to user_profiles
 │       ├── fetchGithubRepos.ts             # Tool: fetch public repos + READMEs via GitHub API
 │       ├── redirectUser.ts                 # Tool: emit redirect marker into stream
-│       └── refreshUserHeadline.ts          # Tool: regenerate user headline from blocks
+│       ├── refreshUserHeadline.ts          # Tool: regenerate user headline from blocks
+│       └── refreshCapabilityBullets.ts     # Tool: regenerate "what I can do" bullets
 ├── prompts/
 │   ├── advocate.md                         # System prompt — onboarding agent
 │   └── advocate-chat.md                    # System prompt — RAG chat agent (Advocate page)
@@ -200,6 +201,7 @@ The onboarding agent at `/api/advocate` runs a streaming agentic loop — text t
 | `fetch_github_repos` | `lib/tools/fetchGithubRepos.ts` | When the user provides a GitHub URL | Calls the GitHub REST API for profile info, public repos, and README excerpts for the top repos |
 | `redirect_user` | `lib/tools/redirectUser.ts` | When the user needs to visit an external page (e.g. LinkedIn export) | Emits a `\x00REDIRECT:{...}\x00` marker in the stream; the frontend strips it and renders a link button |
 | `refresh_user_headline` | `lib/tools/refreshUserHeadline.ts` | After significant profile updates | Regenerates the user's headline stored in `user_profiles.headline` |
+| `refresh_capability_bullets` | `lib/tools/refreshCapabilityBullets.ts` | Fire-and-forget after `save_experience_block`, `update_experience_block`, `upsert_skills` | Regenerates 3–5 generalized "what this person can do" bullets stored in `user_profiles.capability_bullets`. Skips when combined block content is below the minimum signal threshold. Surfaced on the profile page and recruiter candidate cards. |
 
 The RAG chat agent at `/api/advocate/chat` has a single `redirect` tool that opens URLs from the retrieved context in a new tab.
 
@@ -250,6 +252,7 @@ Tool calls that navigate the user emit a null-byte-delimited JSON marker in the 
 | `20260326000016_cleanup_seed_v1.sql` | Removes the old hardcoded-UUID sample users inserted by the deleted v1 seed migration |
 | `20260326000017_add_profile_visibility.sql` | Adds `is_visible` boolean to `user_profiles` — controls Discover search visibility |
 | `20260326000018_add_recruiter_role.sql` | Adds `is_recruiter` boolean and `company_name` to `user_profiles`; updates signup trigger to persist role from auth metadata |
+| `20260421000021_add_capability_bullets.sql` | Adds `capability_bullets text[]` to `user_profiles`, populated by `refreshCapabilityBullets` after each block or skills change. Run `bun run scripts/backfill-capability-bullets.ts` once after applying to populate existing users. |
 
 ---
 
